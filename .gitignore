@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# Local configuration and data
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+data/
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+# Editors
+.DS_Store
+.idea/
+.vscode/

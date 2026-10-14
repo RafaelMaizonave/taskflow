@@ -1,0 +1,35 @@
+{
+  "name": "taskflow-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0",
+    "pinia": "^3.0.0",
+    "axios": "^1.8.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "typescript": "~5.9.0",
+    "vue-tsc": "^3.0.0",
+    "tailwindcss": "^4.1.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "typescript-eslint": "^8.0.0",
+    "globals": "^16.0.0"
+  }
+}
