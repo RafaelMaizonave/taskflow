@@ -10,6 +10,7 @@ from app.infrastructure.database.session import Database
 from app.presentation.auth import router as auth_router
 from app.presentation.errors import domain_error_handler, validation_error_handler
 from app.presentation.health import router as health_router
+from app.presentation.tasks import router as tasks_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -38,4 +39,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(auth_router)
+    app.include_router(tasks_router)
     return app
