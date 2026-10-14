@@ -1,0 +1,27 @@
+name: taskflow
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend/src:/app/src:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+  backend-quality:
+    profiles: ["tools"]
+    build:
+      context: ./backend
+  e2e:
+    profiles: ["tests"]
+    build:
+      context: ./frontend
+      target: e2e
+    init: true
+    shm_size: 1gb

@@ -22,3 +22,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Browser tests
+test-results/
+playwright-report/

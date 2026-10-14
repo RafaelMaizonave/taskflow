@@ -22,6 +22,19 @@ Issues preparadas para RafaelMaizonave/taskflow. Os arquivos em `issues/` são o
 
 ## Decisões
 
-Routers → Services → Repositories → Database. SQLAlchemy síncrono, sessões por requisição e transações controladas pelos services. Sem repositories genéricos ou interfaces artificiais. SQLite e criação inicial de tabelas atendem ao escopo; migrações ficam como melhoria documentada. Tokens ficam apenas em memória. Atualizações e consultas filtram sempre pelo usuário autenticado.
+Clean Architecture e SOLID orientam a implementação. O fluxo HTTP será router → caso de uso → port → adaptador de persistência. A direção das dependências de código aponta para domínio e aplicação; esses módulos não importam FastAPI nem SQLAlchemy. SQLAlchemy permanece síncrono, com sessão por requisição e transações coordenadas pelos casos de uso através de um contrato pequeno.
+
+Estrutura recomendada para a próxima etapa:
+
+```text
+backend/app/
+├── domain/          # Entidades, status e erros de negócio
+├── application/     # Casos de uso e ports específicos com Protocol
+├── infrastructure/  # SQLAlchemy, configuração, Argon2 e JWT
+├── presentation/    # Routers, schemas Pydantic e tradução de erros
+└── main.py          # Inicialização e composição
+```
+
+A estrutura inicial já separa os pacotes domain, application, infrastructure e presentation. As implementações serão adicionadas nas próximas etapas. Evitar repositories genéricos, interfaces artificiais e containers de dependência externos. SOLID deve preservar responsabilidades coesas e contratos pequenos, sem criar camadas sem função. SQLite e criação inicial de tabelas atendem ao escopo; migrações ficam como melhoria documentada. Tokens ficam apenas em memória. Atualizações e consultas filtram sempre pelo usuário autenticado.
 
 A etapa inicial não implementa endpoints, banco, autenticação ou CRUD. Testes de comportamento e Docker serão adicionados nas entregas correspondentes. Não considerar o produto pronto com base apenas nos checks desta estrutura.
