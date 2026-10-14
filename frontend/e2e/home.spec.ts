@@ -1,20 +1,24 @@
 import { expect, test } from '@playwright/test'
 
-test('carrega a página inicial compilada sem erros de execução', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', error => errors.push(error.message))
+test('protege a área autenticada', async ({ page }) => {
+  await page.goto('/tarefas')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('heading', { name: 'Bom ter você de volta' })).toBeVisible()
+})
 
-  const response = await page.goto('/')
-
-  expect(response?.status()).toBe(200)
-  await expect(page).toHaveTitle('TaskFlow')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Organize o trabalho. Simplifique o dia.',
-  )
-  await expect(page.getByRole('main')).toContainText('próximas etapas')
-  const fitsViewport = await page.evaluate(
-    () => document.documentElement.scrollWidth <= window.innerWidth,
-  )
-  expect(fitsViewport).toBe(true)
-  expect(errors).toEqual([])
+test('cadastro, login e logout com API real', async ({ page }) => {
+  const email = `auth-${crypto.randomUUID()}@example.com`
+  const password = 'Senha-segura-123'
+  await page.goto('/cadastro')
+  await page.getByLabel('E-mail', { exact: true }).fill(email)
+  await page.getByLabel('Senha', { exact: true }).fill(password)
+  await page.getByLabel('Confirmar senha').fill(password)
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await expect(page.getByRole('status')).toContainText('Conta criada')
+  await page.getByLabel('E-mail', { exact: true }).fill(email)
+  await page.getByLabel('Senha', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByRole('heading', { name: 'Sua conta' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sair' }).click()
+  await expect(page).toHaveURL(/\/login$/)
 })

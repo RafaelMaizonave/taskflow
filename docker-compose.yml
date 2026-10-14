@@ -18,6 +18,8 @@ services:
       start_period: 10s
       retries: 3
   frontend:
+    environment:
+      API_PROXY_TARGET: http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
@@ -42,8 +44,8 @@ services:
   e2e:
     profiles: ["tests"]
     build:
-      context: ./frontend
-      target: e2e
+      context: .
+      dockerfile: Dockerfile.e2e
     init: true
     shm_size: 1gb
 
