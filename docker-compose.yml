@@ -1,6 +1,26 @@
 name: taskflow
 services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-}
+      DATABASE_URL: sqlite:////app/data/taskflow.db
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    volumes:
+      - taskflow-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
   frontend:
+    depends_on:
+      backend:
+        condition: service_healthy
     build:
       context: ./frontend
       target: development
@@ -16,6 +36,7 @@ services:
       retries: 3
   backend-quality:
     profiles: ["tools"]
+    command: ["uv", "run", "ruff", "check", "."]
     build:
       context: ./backend
   e2e:
@@ -25,3 +46,6 @@ services:
       target: e2e
     init: true
     shm_size: 1gb
+
+volumes:
+  taskflow-data:

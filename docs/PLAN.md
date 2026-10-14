@@ -1,6 +1,6 @@
 # Plano de implementação
 
-Issues preparadas para RafaelMaizonave/taskflow. Os arquivos em `issues/` são os corpos prontos para publicação; sua existência não significa que as issues foram criadas no GitHub.
+Issues cadastradas em https://github.com/RafaelMaizonave/taskflow/issues. Os arquivos em `issues/` documentam os critérios locais. A issue #1 está encerrada; a #2 foi implementada e validada localmente, mas permanece aberta enquanto não for enviada ao repositório. As issues #3 a #9 aguardam suas entregas.
 
 | Ordem | Entrega | Dependências |
 | --- | --- | --- |

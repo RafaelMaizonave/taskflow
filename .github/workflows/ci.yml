@@ -17,7 +17,7 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      # Endpoint integration tests will be enabled with the backend implementation.
+      - run: uv run pytest -q
   frontend-quality:
     runs-on: ubuntu-latest
     defaults:

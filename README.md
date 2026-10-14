@@ -1,6 +1,6 @@
 # TaskFlow
 
-Aplicação de gerenciamento de tarefas com FastAPI e Vue 3, em desenvolvimento incremental. A versão atual entrega a estrutura de Clean Architecture, ferramentas de qualidade e uma página inicial Vue executável. **Cadastro, login, API, banco e CRUD ainda não foram implementados.**
+Aplicação de gerenciamento de tarefas com FastAPI e Vue 3, em desenvolvimento incremental. A versão atual entrega a estrutura de Clean Architecture, ferramentas de qualidade e uma página inicial Vue executável. O backend já inicializa SQLite e disponibiliza `/health` e Swagger. **Cadastro, login e CRUD ainda não foram implementados.**
 
 ## 1. Preparar o Windows e o WSL
 
@@ -66,10 +66,14 @@ Não é necessário instalar Python, Node ou uv no WSL para essa opção.
 
 ```bash
 cd /home/rafael/projetos/taskflow
+# Gere uma configuração local, sem sobrescrever um .env existente.
+# O segredo é gravado no arquivo; não é exibido no terminal.
+test -e .env || (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 docker compose config --quiet
-docker compose up --build -d --wait frontend
+docker compose up --build -d --wait
 docker compose ps
 curl --fail http://localhost:5173/
+curl --fail http://localhost:8000/health
 ```
 
 Abra **http://localhost:5173** no navegador do Windows. Deve aparecer a página inicial do TaskFlow, informando que autenticação e tarefas serão implementadas nas próximas etapas.
@@ -86,7 +90,11 @@ docker compose down
 
 O diretório `frontend/src` é montado como somente leitura para o contêiner: alterações feitas pelo editor no WSL acionam o Vite sem reinstalação. Alterações em dependências ou configurações exigem novo `docker compose up --build -d --wait frontend`.
 
-Não há servidor backend nas portas 8000 ou `/docs` nesta etapa. O serviço `backend-quality` é uma ferramenta de verificação, não uma API. Persistência SQLite por volume será adicionada junto da implementação do banco.
+O backend responde em http://localhost:8000/health com `{"status":"ok"}` e publica Swagger em http://localhost:8000/docs. O health check executa uma consulta ao SQLite; falhas de conexão retornam 503 sem expor detalhes internos.
+
+O SQLite fica no volume nomeado `taskflow-data`, em `/app/data/taskflow.db`. `docker compose down` preserva esse volume; `docker compose down -v` apaga os dados. O serviço `backend-quality` é uma ferramenta separada de verificação.
+
+O Compose lê `JWT_SECRET` do `.env` na raiz. Segredo ausente, vazio ou menor que 32 caracteres impede a inicialização. Se já existir `.env`, confira sua configuração sem divulgar seu conteúdo. Não execute `docker compose config` sem `--quiet` ao compartilhar logs, pois a saída resolvida pode conter segredos.
 
 ## 4. Testar com Docker
 
@@ -96,6 +104,7 @@ Na raiz do projeto, execute:
 # Backend: instalação congelada na imagem e verificações de qualidade
 docker compose run --build --rm backend-quality
 docker compose run --rm backend-quality uv run ruff format --check .
+docker compose run --rm backend-quality uv run pytest -q
 
 # Frontend: lint, tipos, testes unitários e build
 docker compose run --rm frontend npm run lint
@@ -111,7 +120,7 @@ Os serviços de ferramentas são ativados explicitamente; não ficam executando 
 
 Vitest testa o componente inicial isolado em jsdom. Playwright testa a página compilada em Chromium com configurações desktop e mobile, incluindo título, conteúdo, erros de execução e largura da página. Não são testes de autenticação ou CRUD. A emulação mobile não substitui testes em aparelho físico.
 
-O backend ainda não possui comportamento testável: os testes Pytest e HTTPX serão adicionados com os casos de uso e endpoints. Uma execução sem testes não será considerada uma validação bem-sucedida.
+O backend usa Pytest e HTTPX com bancos temporários isolados. Os testes cobrem configuração, restrições e persistência SQLite, sessões, health check, CORS e um servidor Uvicorn real com reinicialização. Autenticação e tarefas serão testadas quando forem implementadas.
 
 ## 5. Executar sem Docker
 
@@ -122,8 +131,13 @@ cd /home/rafael/projetos/taskflow/backend
 uv sync --locked
 uv run ruff check .
 uv run ruff format --check .
+uv run pytest -q
+# Somente se backend/.env ainda não existir:
+test -e .env || (umask 077; printf 'JWT_SECRET=%s\nCORS_ORIGINS=["http://localhost:5173"]\n' "$(openssl rand -hex 32)" > .env)
+uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000
 
-cd ../frontend
+# Em outro terminal:
+cd /home/rafael/projetos/taskflow/frontend
 npm ci
 npm run lint
 npm run typecheck
@@ -141,9 +155,9 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npm run test:e2e
 
 ## Configuração e segurança
 
-A página inicial e os testes atuais não exigem `.env`. `frontend/.env.example` documenta `VITE_API_BASE_URL`; variáveis VITE são públicas e nunca devem conter segredos.
+Os testes geram configuração isolada e não exigem segredos reais. O backend executado manualmente lê `backend/.env`; o Compose lê `.env` na raiz. `frontend/.env.example` documenta `VITE_API_BASE_URL`; variáveis VITE são públicas e nunca devem conter segredos.
 
-`backend/.env.example` documenta `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` e `CORS_ORIGINS` para a próxima etapa. Essas variáveis ainda não são consumidas. O segredo está vazio de propósito e deverá ser obrigatório ao implementar autenticação. Nunca versione `.env`.
+`backend/.env.example` documenta `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` e `CORS_ORIGINS` para a próxima etapa. Essas variáveis já são validadas na inicialização, incluindo algoritmo HS256, duração entre 1 e 1440 minutos e origens HTTP explícitas, sem wildcard ou caminho. O segredo está vazio no exemplo de propósito e é obrigatório. Nunca versione `.env`.
 
 Os Dockerfiles usam lockfiles para instalar dependências. `.dockerignore` exclui arquivos locais, segredos e dependências do host do contexto de build. As imagens são destinadas ao desenvolvimento e testes; não representam uma implantação de produção.
 
@@ -162,19 +176,27 @@ frontend/e2e/
 docs/issues/
 ```
 
-As responsabilidades descritas para o backend orientam os próximos incrementos; os pacotes ainda estão vazios. Dependências de código apontarão para domínio e aplicação. FastAPI fará a composição das dependências na borda; SQLAlchemy será síncrono. SOLID será aplicado com contratos específicos, evitando repositories genéricos e containers externos.
+O domínio define os status permitidos sem importar frameworks. A infraestrutura implementa configuração e persistência; apresentação fornece health e dependência de sessão; `main.py` compõe a aplicação e seu ciclo de vida. Casos de uso serão adicionados com autenticação e CRUD. Dependências de código apontam para domínio e aplicação. SQLAlchemy é síncrono. SOLID será aplicado com contratos específicos, evitando repositories genéricos e containers externos.
 
 Vue usa Composition API, Router e Pinia. Tailwind cuida dos estilos. Ruff, ESLint e TypeScript verificam qualidade; Vitest e Playwright verificam comportamentos. O CI está configurado para essas verificações; sua execução remota precisa ser conferida no GitHub após publicação dos arquivos.
 
 ## Próximas entregas e limitações
 
-Veja [o plano e os critérios das issues](docs/PLAN.md). As próximas etapas incluem `/health`, `/docs`, `/api/v1/auth`, `/api/v1/tasks`, testes com banco isolado, dashboard e persistência SQLite por volume.
+Veja [o plano e os critérios das issues](docs/PLAN.md). As próximas etapas incluem `/api/v1/auth`, `/api/v1/tasks`, testes dos fluxos de negócio e dashboard.
 
 Tokens serão mantidos apenas em memória: recarregar a página exigirá novo login. Logout local não revoga JWT já emitido. Para produção, avaliar cookies HttpOnly/Secure, proteção CSRF, revogação e rotação de tokens, rate limiting, recuperação de senha, migrações e observabilidade.
 
 ## Validação desta entrega
 
 - Compose validado com `docker compose config --quiet`.
-- Aplicação validada fora do Docker: build, 2 testes unitários e 2 E2E aprovados.
+- Aplicação validada fora do Docker: backend com testes unitários, integração e E2E de servidor real; frontend com build, 2 testes unitários e 2 E2E aprovados.
 - Build das imagens neste ambiente em nuvem bloqueado por resolução DNS/rede ao instalar dependências, inclusive ao testar a rede do host. A inicialização e os testes dentro dos contêineres permanecem sem validação; devem ser executados no WSL com os comandos acima.
 - Nenhuma instalação ou execução no WSL do usuário foi realizada remotamente.
+
+## Persistência e ciclo de vida do backend
+
+Na inicialização, a aplicação valida configurações, cria o diretório do banco e as tabelas ausentes. Na finalização, libera o engine. Cada requisição que depende do banco recebe uma sessão própria, fechada ao terminar; commits serão responsabilidade dos futuros casos de uso. Sessões não executam commit automaticamente.
+
+`users` possui e-mail único e hash de senha. `tasks` possui título obrigatório de até 200 caracteres, descrição, status restrito, data de criação gerada em UTC e chave estrangeira para usuário. A integridade referencial é habilitada em toda conexão SQLite; exclusão de usuário remove suas tarefas. Datas são gravadas como UTC; SQLite não preserva informação de fuso no tipo datetime, o que será tratado na serialização dos próximos endpoints.
+
+`create_all` permite reinicializações sem apagar dados, mas não migra tabelas existentes. Evolução de esquema exigirá migrações. Não há endpoints de usuários ou tarefas, nem serviço de autenticação nesta issue.
