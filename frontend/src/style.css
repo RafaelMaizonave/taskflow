@@ -43,6 +43,45 @@ textarea { resize: vertical; }
 .notice { padding: 12px 16px; border-radius: 8px; background: #fff4d6; color: #725619; line-height: 1.5; font-size: 14px; overflow-wrap: anywhere; }
 .notice.error { background: #fff0ef; color: #a42d2d; border: 1px solid #f3d0cc; }
 .notice.success { background: #e2f4ee; color: #166147; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px max(24px, calc((100vw - 1120px) / 2)); background: white; border-bottom: 1px solid #e0e8e8; }
+.topbar .brand { color: #123c40; font-size: 23px; }
+.account { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.account span { font-size: 12px; color: #65777d; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard { width: min(1120px, calc(100% - 48px)); margin: 54px auto; min-height: 70vh; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 34px; }
+.page-heading h1 { font-size: 38px; letter-spacing: -1.5px; margin: 12px 0 8px; }
+.page-heading p { font-size: 14px; margin: 0; }
+.heading-dot { color: #087c72; }
+.card { background: white; border: 1px solid #dfe7e7; border-radius: 12px; }
+.filters { display: flex; gap: 16px; align-items: flex-end; padding: 22px; margin: 24px 0 30px; }
+.search { flex: 1; }
+.filters select { min-width: 180px; }
+.list-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.list-heading h2 { font-size: 15px; margin: 0; }
+.count { font-size: 12px; color: #65777d; }
+.task-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.task { padding: 24px; display: flex; justify-content: space-between; align-items: center; gap: 28px; }
+.task-main { min-width: 0; }
+.task h3 { font-size: 17px; margin: 12px 0 8px; overflow-wrap: anywhere; }
+.task-description { font-size: 14px; color: #65777d; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; margin-bottom: 14px; }
+.task-date { color: #849297; font-size: 11px; }
+.task-actions { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.task-actions select { width: 155px; font-size: 12px; padding: 9px; }
+.text-button { border: 0; background: transparent; color: #087c72; padding: 6px 0; font-size: 12px; font-weight: 650; }
+.danger { color: #a13a3a; }
+.badge { display: inline-block; border-radius: 5px; padding: 4px 8px; font-size: 10px; font-weight: 700; }
+.pending { background: #fff2cf; color: #866218; }
+.in_progress { background: #e6efff; color: #335e9d; }
+.completed .badge { background: #e2f4ee; color: #166147; }
+.empty { padding: 55px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.empty h3 { font-size: 18px; margin: 10px 0 0; }
+.empty p { margin: 0; font-size: 14px; }
+.empty-icon { font-size: 25px; color: #087c72; background: #e2f4ee; border-radius: 14px; width: 52px; height: 52px; display: grid; place-items: center; }
+.editor { padding: 28px; margin-bottom: 24px; }
+.editor h2 { font-size: 20px; }
+.actions { display: flex; gap: 12px; }
+.workspace-footer { text-align: center; font-size: 11px; color: #849297; padding: 20px; }
+@media (max-width: 900px) { .task { align-items: flex-start; flex-direction: column; gap: 20px; } .task-actions { width: 100%; } }
 @media (max-width: 640px) {
   .auth-layout { grid-template-columns: 1fr; }
   .auth-story { padding: 26px 24px; gap: 24px; }
@@ -50,4 +89,13 @@ textarea { resize: vertical; }
   .auth-story p, .story-note, .story-footer { display: none; }
   .auth-panel { padding: 36px 24px; }
   .auth-card h2 { font-size: 26px; }
+  .topbar { padding: 16px 20px; }
+  .account { gap: 10px; }
+  .account span { max-width: 100px; }
+  .dashboard { width: calc(100% - 32px); margin: 30px auto; }
+  .page-heading { align-items: flex-start; flex-direction: column; }
+  .page-heading h1 { font-size: 32px; }
+  .filters { flex-direction: column; align-items: stretch; padding: 18px; }
+  .task { padding: 20px; }
+  .task-actions { flex-wrap: wrap; gap: 16px; }
 }

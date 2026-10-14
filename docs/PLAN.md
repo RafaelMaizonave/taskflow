@@ -1,6 +1,6 @@
 # Plano de implementação
 
-Issues cadastradas em https://github.com/RafaelMaizonave/taskflow/issues. Os arquivos em `issues/` documentam os critérios locais. A issue #1 está encerrada; a #2 foi implementada e validada localmente, mas permanece aberta enquanto não for enviada ao repositório. As issues #3 a #9 aguardam suas entregas.
+Issues cadastradas em https://github.com/RafaelMaizonave/taskflow/issues. Os arquivos em `issues/` documentam os critérios de aceite. As issues #1, #2, #3, #4, #6 e #7 foram implementadas e entregues em commits separados em main. As issues #5, #8 e #9 permanecem para consolidação da cobertura, validação Docker e revisão final da entrega.
 
 | Ordem | Entrega | Dependências |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ Issues cadastradas em https://github.com/RafaelMaizonave/taskflow/issues. Os arq
 
 Clean Architecture e SOLID orientam a implementação. O fluxo HTTP será router → caso de uso → port → adaptador de persistência. A direção das dependências de código aponta para domínio e aplicação; esses módulos não importam FastAPI nem SQLAlchemy. SQLAlchemy permanece síncrono, com sessão por requisição e transações coordenadas pelos casos de uso através de um contrato pequeno.
 
-Estrutura recomendada para a próxima etapa:
+Estrutura implementada:
 
 ```text
 backend/app/
@@ -35,6 +35,6 @@ backend/app/
 └── main.py          # Inicialização e composição
 ```
 
-A estrutura inicial já separa os pacotes domain, application, infrastructure e presentation. As implementações serão adicionadas nas próximas etapas. Evitar repositories genéricos, interfaces artificiais e containers de dependência externos. SOLID deve preservar responsabilidades coesas e contratos pequenos, sem criar camadas sem função. SQLite e criação inicial de tabelas atendem ao escopo; migrações ficam como melhoria documentada. Tokens ficam apenas em memória. Atualizações e consultas filtram sempre pelo usuário autenticado.
+A estrutura inicial já separa os pacotes domain, application, infrastructure e presentation. Autenticação e CRUD estão implementados no backend; frontend autenticado está implementado e integrado à API. Evitar repositories genéricos, interfaces artificiais e containers de dependência externos. SOLID deve preservar responsabilidades coesas e contratos pequenos, sem criar camadas sem função. SQLite e criação inicial de tabelas atendem ao escopo; migrações ficam como melhoria documentada. Tokens ficam apenas em memória. Atualizações e consultas filtram sempre pelo usuário autenticado.
 
-A etapa inicial não implementa endpoints, banco, autenticação ou CRUD. Testes de comportamento e Docker serão adicionados nas entregas correspondentes. Não considerar o produto pronto com base apenas nos checks desta estrutura.
+O backend possui endpoints, banco, autenticação e CRUD com testes de comportamento. A interface permite cadastro, login e gerenciamento de tarefas. Docker está configurado, mas a execução em contêiner ainda requer validação devido ao bloqueio de DNS da nuvem.
