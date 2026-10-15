@@ -4,37 +4,46 @@ import { authApi } from '../api/auth'
 import { api } from '../api/client'
 import { useAuthStore } from './auth'
 
-vi.mock('../api/auth', () => ({ authApi: { login: vi.fn(), me: vi.fn() } }))
+vi.mock('../api/auth', () => ({ authApi: { login: vi.fn(), logout: vi.fn(), me: vi.fn() } }))
+const user = { id: 1, email: 'user@example.com', name: 'Usuário', created_at: null }
+beforeEach(() => { setActivePinia(createPinia()); vi.resetAllMocks() })
 
-beforeEach(() => {
-  setActivePinia(createPinia())
-  vi.resetAllMocks()
-  delete api.defaults.headers.common.Authorization
-})
-
-describe('Sessão em memória', () => {
-  it('autentica e envia o token, sem persistir credenciais', async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ access_token: 'test-token', token_type: 'bearer', expires_in: 1800 })
-    vi.mocked(authApi.me).mockResolvedValue({ id: 1, email: 'user@example.com' })
+describe('Sessão por cookie HttpOnly', () => {
+  it('autentica sem persistir credenciais no armazenamento acessível a JavaScript', async () => {
+    vi.mocked(authApi.me).mockResolvedValue(user)
     const store = useAuthStore()
-    await store.login({ email: 'user@example.com', password: 'test-password' })
+    await store.login({ email: user.email, password: 'test-password' })
     expect(store.authenticated).toBe(true)
-    expect(store.user?.email).toBe('user@example.com')
-    expect(api.defaults.headers.common.Authorization).toBe('Bearer test-token')
+    expect(api.defaults.withCredentials).toBe(true)
+    expect(api.defaults.headers.common.Authorization).toBeUndefined()
     expect(localStorage.length).toBe(0)
     expect(sessionStorage.length).toBe(0)
-    store.logout()
+    await store.logout()
+    expect(authApi.logout).toHaveBeenCalledOnce()
     expect(store.authenticated).toBe(false)
-    expect(store.user).toBeNull()
-    expect(api.defaults.headers.common.Authorization).toBeUndefined()
   })
-
-  it('descarta o token quando a consulta do usuário falha', async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ access_token: 'test-token', token_type: 'bearer', expires_in: 1800 })
+  it('restaura a sessão uma vez antes de resolver a navegação', async () => {
+    vi.mocked(authApi.me).mockResolvedValue(user)
+    const store = useAuthStore()
+    await Promise.all([store.initialize(), store.initialize()])
+    expect(authApi.me).toHaveBeenCalledOnce()
+    expect(store.user).toEqual(user)
+    expect(store.initialized).toBe(true)
+  })
+  it('não restaura uma resposta antiga depois de limpar a sessão', async () => {
+    let resolve!: (value: typeof user) => void
+    vi.mocked(authApi.me).mockReturnValue(new Promise(done => { resolve = done }))
+    const store = useAuthStore()
+    const restoring = store.initialize()
+    store.clearSession()
+    resolve(user)
+    await restoring
+    expect(store.authenticated).toBe(false)
+  })
+  it('não autentica quando a consulta do usuário falha', async () => {
     vi.mocked(authApi.me).mockRejectedValue(new Error('Sem sessão'))
     const store = useAuthStore()
-    await expect(store.login({ email: 'user@example.com', password: 'test-password' })).rejects.toThrow()
+    await expect(store.login({ email: user.email, password: 'test-password' })).rejects.toThrow()
     expect(store.authenticated).toBe(false)
-    expect(api.defaults.headers.common.Authorization).toBeUndefined()
   })
 })

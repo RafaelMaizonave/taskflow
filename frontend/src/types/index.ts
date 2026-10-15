@@ -1,14 +1,42 @@
-export interface User { id: number; email: string }
-export type TaskStatus = 'pending' | 'in_progress' | 'completed'
+export type TaskStatus = 'backlog' | 'in_progress' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  created_at: string | null
+}
+
 export interface Task {
   id: number
-  titulo: string
-  descricao: string
+  title: string
+  description: string | null
   status: TaskStatus
-  data_criacao: string
-  user_id: number
+  priority: TaskPriority
+  due_date: string | null
+  tags: string[]
+  position: number
+  created_at: string
+  updated_at: string
+  completed_at: string | null
 }
-export interface TaskInput { titulo: string; descricao: string; status: TaskStatus }
-export const statusLabels: Record<TaskStatus, string> = {
-  pending: 'Pendente', in_progress: 'Em andamento', completed: 'Concluída',
+
+export interface TaskInput {
+  title: string
+  description?: string | null
+  status: TaskStatus
+  priority: TaskPriority
+  due_date?: string | null
+  tags: string[]
+}
+
+export interface DashboardSummary {
+  total: number
+  backlog: number
+  in_progress: number
+  done: number
+  overdue: number
+  completion_rate: number
+  upcoming: Task[]
 }
