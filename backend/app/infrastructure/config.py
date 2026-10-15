@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, ge=1, le=1440)
     database_url: str = "sqlite:///./data/taskflow.db"
     cors_origins: list[str] = Field(default_factory=list)
+    auth_rate_limit: int = Field(default=20, ge=1, le=10_000)
+    auth_rate_window_seconds: int = Field(default=60, ge=1, le=3600)
 
     @field_validator("jwt_secret")
     @classmethod

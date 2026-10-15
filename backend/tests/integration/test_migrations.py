@@ -37,6 +37,7 @@ def test_legacy_migration_preserves_accounts_tasks_and_unknown_dates(tmp_path):
             assert user.password_hash == "original-hash"
             assert user.created_at is None
             assert user.name == ""
+            assert user.token_version == 0
             tasks = session.scalars(select(TaskModel).order_by(TaskModel.id)).all()
             assert [task.id for task in tasks] == [11, 12]
             assert [task.status for task in tasks] == ["backlog", "done"]
@@ -45,7 +46,7 @@ def test_legacy_migration_preserves_accounts_tasks_and_unknown_dates(tmp_path):
             assert all(task.user_id == 7 and task.tags == [] for task in tasks)
             assert all(task.completed_at is None for task in tasks)
         with database.engine.connect() as connection:
-            assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == 1
+            assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == 2
             assert connection.exec_driver_sql("PRAGMA foreign_key_check").all() == []
     finally:
         database.close()

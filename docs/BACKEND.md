@@ -34,9 +34,9 @@ O cadastro aceita também `name`, opcional, com até 100 caracteres; na ausênci
 
 O perfil aceita `name` de 1 a 100 caracteres após remover espaços e/ou `email` válido. Objeto vazio e campos nulos são rejeitados. `created_at` registra a criação de contas novas; contas anteriores à migração retornam `null`, pois essa data não era armazenada.
 
-A troca de senha recebe `{"current_password": "senha-atual", "password": "nova-senha"}` e exige cookie de sessão ou Bearer. Senha atual incorreta retorna 403 sem encerrar a sessão; ausência ou invalidade do token continua retornando 401. A alteração não revoga JWTs já emitidos.
+A troca de senha recebe `{"current_password": "senha-atual", "password": "nova-senha"}` e exige cookie de sessão ou Bearer. Senha atual incorreta retorna 403 sem encerrar a sessão; ausência ou invalidade do token continua retornando 401. A alteração incrementa `token_version` do usuário (revoga JWTs anteriores), emite um novo token e renova o cookie HttpOnly.
 
-Tokens usam HS256 com segredo externo, `sub` como ID textual e datas `iat`/`exp`. A validação exige assinatura, algoritmo e claims válidas e verifica que o usuário ainda existe. Login com usuário desconhecido também executa verificação Argon2 para reduzir diferenças de tempo observáveis. Isso não substitui rate limiting.
+Tokens usam HS256 com segredo externo, `sub` como ID textual, `tv` com a versão de sessão e datas `iat`/`exp`. A validação exige assinatura, algoritmo e claims válidas, confere a versão com o usuário persistido e verifica que a conta ainda existe. Logout com sessão válida também incrementa `token_version`, invalidando Bearer e cookies anteriores. Login e cadastro aplicam rate limiting por IP e rota (`AUTH_RATE_LIMIT` / `AUTH_RATE_WINDOW_SECONDS`, padrão 20/min); excesso retorna 429 com `Retry-After`. Login com usuário desconhecido também executa verificação Argon2 para reduzir diferenças de tempo observáveis.
 
 A aplicação retorna 401 com `WWW-Authenticate: Bearer` quando a autenticação falha. Erros de validação retornam 422 sem ecoar os valores recebidos, evitando expor senhas ou tokens na resposta.
 

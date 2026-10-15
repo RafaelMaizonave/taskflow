@@ -6,6 +6,7 @@ import BrandLogo from '../components/brand/BrandLogo.vue'
 import AuthIllustration from '../components/brand/AuthIllustration.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import FormField from '../components/ui/FormField.vue'
+import { LIMITS } from '../constants/limits'
 import { useAuthStore } from '../stores/auth'
 import { errorMessage } from '../api/client'
 
@@ -28,8 +29,19 @@ async function submit() {
     state.error = 'Preencha todos os campos obrigatórios.'
     return
   }
-  if (form.password.length < 8) {
-    state.error = 'A senha deve ter pelo menos 8 caracteres.'
+  if (mode.value === 'register' && form.name.trim().length > LIMITS.NAME) {
+    state.error = `O nome deve ter até ${LIMITS.NAME} caracteres.`
+    return
+  }
+  if (form.email.length > LIMITS.EMAIL) {
+    state.error = `O e-mail deve ter até ${LIMITS.EMAIL} caracteres.`
+    return
+  }
+  if (
+    form.password.length < LIMITS.PASSWORD_MIN ||
+    form.password.length > LIMITS.PASSWORD_MAX
+  ) {
+    state.error = `A senha deve ter entre ${LIMITS.PASSWORD_MIN} e ${LIMITS.PASSWORD_MAX} caracteres.`
     return
   }
   if (mode.value === 'register' && form.password !== form.confirmation) {
@@ -105,7 +117,7 @@ async function submit() {
             v-if="mode === 'register'"
             v-model="form.name"
             label="Nome"
-            :maxlength="100"
+            :maxlength="LIMITS.NAME"
             placeholder="Como podemos chamar você?"
             autocomplete="name"
             required
@@ -113,7 +125,7 @@ async function submit() {
           <FormField
             v-model="form.email"
             label="E-mail"
-            :maxlength="254"
+            :maxlength="LIMITS.EMAIL"
             type="email"
             placeholder="voce@empresa.com"
             autocomplete="email"
@@ -123,10 +135,10 @@ async function submit() {
             <FormField
               v-model="form.password"
               label="Senha"
-              :minlength="8"
-              :maxlength="128"
+              :minlength="LIMITS.PASSWORD_MIN"
+              :maxlength="LIMITS.PASSWORD_MAX"
               :type="state.showPassword ? 'text' : 'password'"
-              placeholder="Mínimo de 8 caracteres"
+              :placeholder="`Mínimo de ${LIMITS.PASSWORD_MIN} caracteres`"
               :autocomplete="
                 mode === 'login' ? 'current-password' : 'new-password'
               "
@@ -153,8 +165,8 @@ async function submit() {
             v-if="mode === 'register'"
             v-model="form.confirmation"
             label="Confirmar senha"
-            :minlength="8"
-            :maxlength="128"
+            :minlength="LIMITS.PASSWORD_MIN"
+            :maxlength="LIMITS.PASSWORD_MAX"
             type="password"
             autocomplete="new-password"
             required

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.domain.errors import DomainError
 from app.infrastructure.config import Settings
 from app.infrastructure.database.session import Database
+from app.infrastructure.rate_limit import SlidingWindowRateLimiter
 from app.presentation.auth import router as auth_router
 from app.presentation.errors import domain_error_handler, validation_error_handler
 from app.presentation.health import router as health_router
@@ -28,6 +29,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="TaskFlow API", version="0.1.0", lifespan=lifespan)
     app.state.database = database
     app.state.settings = configuration
+    app.state.auth_rate_limiter = SlidingWindowRateLimiter(
+        configuration.auth_rate_limit, configuration.auth_rate_window_seconds
+    )
     app.add_exception_handler(DomainError, domain_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_middleware(

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated, Self
 
 from fastapi import APIRouter, Depends, Request, Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -12,15 +13,19 @@ from pydantic import (
 )
 
 from app.application.auth import AuthService
+from app.domain.errors import AuthenticationError
 from app.domain.user import User
 from app.presentation.auth_dependencies import get_auth_service, get_current_user
+from app.presentation.rate_limit import enforce_auth_rate_limit
 from app.presentation.session_cookie import (
+    SESSION_COOKIE,
     clear_session,
     require_browser_request,
     set_session,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autenticação"])
+bearer = HTTPBearer(auto_error=False)
 
 
 class Credentials(BaseModel):
@@ -87,14 +92,23 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=201,
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 def register(
     data: Registration, service: Annotated[AuthService, Depends(get_auth_service)]
 ):
     return service.register(str(data.email), data.password, data.name)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 def login(
     data: Credentials,
     request: Request,
@@ -108,8 +122,24 @@ def login(
 
 
 @router.post("/logout", status_code=204)
-def logout(request: Request, response: Response) -> None:
+def logout(
+    request: Request,
+    response: Response,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
     require_browser_request(request)
+    token = None
+    if request.headers.get("Authorization") and credentials is not None:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        try:
+            user = service.authenticate(token)
+            service.revoke_sessions(user.id)
+        except AuthenticationError:
+            pass
     clear_session(response, request)
 
 
@@ -131,8 +161,12 @@ def update_me(
 @router.post("/change-password", status_code=204)
 def change_password(
     data: PasswordChange,
+    request: Request,
+    response: Response,
     user: Annotated[User, Depends(get_current_user)],
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> Response:
-    service.change_password(user, data.current_password, data.password)
+    token = service.change_password(user, data.current_password, data.password)
+    duration = request.app.state.settings.access_token_expire_minutes * 60
+    set_session(response, request, token, duration)
     return Response(status_code=204)

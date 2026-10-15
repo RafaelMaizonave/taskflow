@@ -3,6 +3,7 @@ import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
 import BaseButton from '../../components/ui/BaseButton.vue'
 import FormField from '../../components/ui/FormField.vue'
+import { LIMITS, TAGS_TEXT_MAX } from '../../constants/limits'
 import { useTasksStore } from '../../stores/tasks'
 import { useToasts } from '../../composables/useToasts'
 import type { Task, TaskInput } from '../../types'
@@ -92,12 +93,18 @@ async function submit() {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean)
-  if (form.title.trim().length > 200 || form.description.length > 10000) {
-    state.error = 'Use até 200 caracteres no título e 10.000 na descrição.'
+  if (
+    form.title.trim().length > LIMITS.TITLE ||
+    form.description.length > LIMITS.DESCRIPTION
+  ) {
+    state.error = `Use até ${LIMITS.TITLE} caracteres no título e ${LIMITS.DESCRIPTION.toLocaleString('pt-BR')} na descrição.`
     return
   }
-  if (form.tags.length > 6 || form.tags.some((tag) => tag.length > 40)) {
-    state.error = 'Use até 6 tags, com no máximo 40 caracteres cada.'
+  if (
+    form.tags.length > LIMITS.TAGS_MAX ||
+    form.tags.some((tag) => tag.length > LIMITS.TAG)
+  ) {
+    state.error = `Use até ${LIMITS.TAGS_MAX} tags, com no máximo ${LIMITS.TAG} caracteres cada.`
     return
   }
   state.saving = true
@@ -169,7 +176,7 @@ async function submit() {
             <FormField
               v-model="form.title"
               label="Título"
-              :maxlength="200"
+              :maxlength="LIMITS.TITLE"
               placeholder="Ex.: Revisar planejamento da sprint"
               required
               :error="state.error"
@@ -177,7 +184,7 @@ async function submit() {
             <FormField
               v-model="form.description"
               label="Descrição"
-              :maxlength="10000"
+              :maxlength="LIMITS.DESCRIPTION"
               placeholder="Adicione contexto, links ou observações..."
               multiline
             />
@@ -213,10 +220,12 @@ async function submit() {
             <FormField
               v-model="state.tagsText"
               label="Tags"
+              :maxlength="TAGS_TEXT_MAX"
               placeholder="Produto, Design, Pesquisa"
             />
             <p class="form-hint">
-              Separe as tags por vírgulas. Use até 6 tags.
+              Separe as tags por vírgulas. Use até {{ LIMITS.TAGS_MAX }} tags
+              ({{ LIMITS.TAG }} caracteres cada).
             </p>
             <footer class="task-drawer__footer">
               <BaseButton

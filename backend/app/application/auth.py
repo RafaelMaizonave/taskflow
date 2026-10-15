@@ -20,8 +20,8 @@ class Passwords(Protocol):
 
 
 class Tokens(Protocol):
-    def issue(self, user_id: int) -> str: ...
-    def subject(self, token: str) -> int: ...
+    def issue(self, user_id: int, token_version: int = 0) -> str: ...
+    def parse(self, token: str) -> tuple[int, int]: ...
 
 
 class AuthService:
@@ -48,11 +48,12 @@ class AuthService:
             raise AuthenticationError("Credenciais inválidas")
         if not self.passwords.verify(user.password_hash, password):
             raise AuthenticationError("Credenciais inválidas")
-        return self.tokens.issue(user.id)
+        return self.tokens.issue(user.id, user.token_version)
 
     def authenticate(self, token: str) -> User:
-        user = self.users.by_id(self.tokens.subject(token))
-        if user is None:
+        user_id, token_version = self.tokens.parse(token)
+        user = self.users.by_id(user_id)
+        if user is None or user.token_version != token_version:
             raise AuthenticationError("Token inválido ou expirado")
         return user
 
@@ -65,7 +66,20 @@ class AuthService:
             self.users.rollback()
             raise
 
-    def change_password(self, user: User, current_password: str, password: str) -> None:
+    def revoke_sessions(self, user_id: int) -> User:
+        user = self.users.by_id(user_id)
+        if user is None:
+            raise AuthenticationError("Usuário não encontrado")
+        return self.update_profile(user_id, {"token_version": user.token_version + 1})
+
+    def change_password(self, user: User, current_password: str, password: str) -> str:
         if not self.passwords.verify(user.password_hash, current_password):
             raise PasswordMismatchError("Senha atual incorreta")
-        self.update_profile(user.id, {"password_hash": self.passwords.hash(password)})
+        updated = self.update_profile(
+            user.id,
+            {
+                "password_hash": self.passwords.hash(password),
+                "token_version": user.token_version + 1,
+            },
+        )
+        return self.tokens.issue(updated.id, updated.token_version)

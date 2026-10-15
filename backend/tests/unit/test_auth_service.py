@@ -56,7 +56,32 @@ def test_hashes_are_salted_and_verified():
 
 def test_tokens_round_trip(settings):
     tokens = JwtTokens(settings)
-    assert tokens.subject(tokens.issue(42)) == 42
+    assert tokens.parse(tokens.issue(42, 3)) == (42, 3)
+
+
+def test_authenticate_rejects_revoked_token_version():
+    users, passwords, tokens = Mock(), Mock(), Mock()
+    tokens.parse.return_value = (1, 0)
+    users.by_id.return_value = User(1, "rafael@example.com", "hash", token_version=1)
+    with pytest.raises(AuthenticationError):
+        AuthService(users, passwords, tokens).authenticate("token")
+
+
+def test_change_password_issues_token_with_new_version():
+    users, passwords, tokens = Mock(), Mock(), Mock()
+    user = User(1, "rafael@example.com", "hash", token_version=2)
+    passwords.verify.return_value = True
+    passwords.hash.return_value = "new-hash"
+    users.update.return_value = User(
+        1, "rafael@example.com", "new-hash", token_version=3
+    )
+    tokens.issue.return_value = "new-token"
+    service = AuthService(users, passwords, tokens)
+    assert service.change_password(user, "atual", "Nova-senha-123") == "new-token"
+    users.update.assert_called_once_with(
+        1, {"password_hash": "new-hash", "token_version": 3}
+    )
+    tokens.issue.assert_called_once_with(1, 3)
 
 
 def test_password_hash_is_absent_from_user_repr():

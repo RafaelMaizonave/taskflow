@@ -13,6 +13,7 @@ def test_cookie_session_logout_and_csrf(settings):
         data = {"email": "cookie@example.com", "password": "Senha-segura-123"}
         client.post("/api/v1/auth/register", json=data)
         response = client.post("/api/v1/auth/login", json=data)
+        bearer = response.json()["access_token"]
         cookie = response.headers["set-cookie"]
         assert "HttpOnly" in cookie
         assert "SameSite=strict" in cookie
@@ -32,6 +33,12 @@ def test_cookie_session_logout_and_csrf(settings):
         assert client.post("/api/v1/auth/logout").status_code == 403
         assert client.post("/api/v1/auth/logout", headers=BROWSER).status_code == 204
         assert client.get("/api/v1/auth/me").status_code == 401
+        assert (
+            client.get(
+                "/api/v1/auth/me", headers={"Authorization": f"Bearer {bearer}"}
+            ).status_code
+            == 401
+        )
 
 
 def test_expired_cookie_and_https_flags(settings):

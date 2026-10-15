@@ -29,6 +29,7 @@ class UserModel(Base):
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=True
     )
+    token_version: Mapped[int] = mapped_column(default=0, nullable=False)
     tasks: Mapped[list["TaskModel"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )

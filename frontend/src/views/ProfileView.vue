@@ -10,6 +10,7 @@ import {
 } from '@lucide/vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import FormField from '../components/ui/FormField.vue'
+import { LIMITS } from '../constants/limits'
 import { useAuthStore } from '../stores/auth'
 import { authApi } from '../api/auth'
 import { errorMessage } from '../api/client'
@@ -39,11 +40,10 @@ const memberSince = computed(() =>
 async function save() {
   if (
     !form.name.trim() ||
-    form.name.trim().length > 100 ||
-    form.email.length > 254
+    form.name.trim().length > LIMITS.NAME ||
+    form.email.length > LIMITS.EMAIL
   ) {
-    state.error =
-      'Informe um nome de até 100 caracteres e um e-mail de até 254 caracteres.'
+    state.error = `Informe um nome de até ${LIMITS.NAME} caracteres e um e-mail de até ${LIMITS.EMAIL} caracteres.`
     return
   }
   state.saving = true
@@ -61,12 +61,22 @@ async function save() {
 async function changePassword() {
   state.error = ''
   state.message = ''
+  if (
+    form.current_password.length < LIMITS.CURRENT_PASSWORD_MIN ||
+    form.current_password.length > LIMITS.PASSWORD_MAX
+  ) {
+    state.error = `A senha atual deve ter até ${LIMITS.PASSWORD_MAX} caracteres.`
+    return
+  }
   if (form.password !== form.confirmation) {
     state.error = 'As senhas devem ser iguais.'
     return
   }
-  if (form.password.length < 8 || form.password.length > 128) {
-    state.error = 'A nova senha deve ter entre 8 e 128 caracteres.'
+  if (
+    form.password.length < LIMITS.PASSWORD_MIN ||
+    form.password.length > LIMITS.PASSWORD_MAX
+  ) {
+    state.error = `A nova senha deve ter entre ${LIMITS.PASSWORD_MIN} e ${LIMITS.PASSWORD_MAX} caracteres.`
     return
   }
   state.changing = true
@@ -142,13 +152,13 @@ async function logout() {
           <FormField
             v-model="form.name"
             label="Nome"
-            :maxlength="100"
+            :maxlength="LIMITS.NAME"
             autocomplete="name"
             required
           /><FormField
             v-model="form.email"
             label="E-mail"
-            :maxlength="254"
+            :maxlength="LIMITS.EMAIL"
             type="email"
             autocomplete="email"
             required
@@ -167,24 +177,24 @@ async function logout() {
           <FormField
             v-model="form.current_password"
             label="Senha atual"
-            :minlength="8"
-            :maxlength="128"
+            :minlength="LIMITS.CURRENT_PASSWORD_MIN"
+            :maxlength="LIMITS.PASSWORD_MAX"
             type="password"
             autocomplete="current-password"
             required
           /><FormField
             v-model="form.password"
             label="Nova senha"
-            :minlength="8"
-            :maxlength="128"
+            :minlength="LIMITS.PASSWORD_MIN"
+            :maxlength="LIMITS.PASSWORD_MAX"
             type="password"
             autocomplete="new-password"
             required
           /><FormField
             v-model="form.confirmation"
             label="Confirmar nova senha"
-            :minlength="8"
-            :maxlength="128"
+            :minlength="LIMITS.PASSWORD_MIN"
+            :maxlength="LIMITS.PASSWORD_MAX"
             type="password"
             autocomplete="new-password"
             required

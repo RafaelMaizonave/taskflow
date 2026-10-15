@@ -14,6 +14,7 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import SelectMenu from '../components/ui/SelectMenu.vue'
 import TaskCard from '../components/tasks/TaskCard.vue'
 import TaskFormDrawer from '../components/tasks/TaskFormDrawer.vue'
+import { LIMITS } from '../constants/limits'
 import { useTasksStore } from '../stores/tasks'
 import { useToasts } from '../composables/useToasts'
 import type { Task, TaskStatus, TaskPriority } from '../types'
@@ -125,6 +126,7 @@ onMounted(() => tasks.load())
           v-model="tasks.search"
           aria-label="Buscar por tarefa ou tag"
           placeholder="Buscar por tarefa ou tag..."
+          :maxlength="LIMITS.SEARCH"
         >
       </label>
       <SelectMenu

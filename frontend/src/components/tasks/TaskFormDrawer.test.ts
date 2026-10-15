@@ -70,16 +70,16 @@ describe('Edição acessível de tarefas', () => {
     title.value = 'Organizar'
     title.dispatchEvent(new Event('input', { bubbles: true }))
     const tags = document.querySelector<HTMLInputElement>('#field-tags')!
-    tags.value = 'a,b,c,d,e,f,g'
+    tags.value = 'a,b,c,d,e,f,g,h,i,j,k'
     tags.dispatchEvent(new Event('input', { bubbles: true }))
     document
       .querySelector('form')!
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     await flushPromises()
     expect(document.querySelector('[role="alert"]')?.textContent).toContain(
-      'até 6 tags',
+      'até 10 tags',
     )
-    expect(tags.value).toBe('a,b,c,d,e,f,g')
+    expect(tags.value).toBe('a,b,c,d,e,f,g,h,i,j,k')
     expect(create).not.toHaveBeenCalled()
     tags.value = 'a'.repeat(41)
     tags.dispatchEvent(new Event('input', { bubbles: true }))
@@ -92,9 +92,14 @@ describe('Edição acessível de tarefas', () => {
     )
     expect(create).not.toHaveBeenCalled()
   })
-  it('expõe limites nativos de título e descrição', async () => {
+  it('expõe limites nativos alinhados ao banco', async () => {
     await openDrawer()
-    expect(document.querySelector('input')?.maxLength).toBe(200)
+    expect(
+      document.querySelector<HTMLInputElement>('#field-t-tulo')?.maxLength,
+    ).toBe(200)
     expect(document.querySelector('textarea')?.maxLength).toBe(10000)
+    expect(
+      document.querySelector<HTMLInputElement>('#field-tags')?.maxLength,
+    ).toBe(418)
   })
 })

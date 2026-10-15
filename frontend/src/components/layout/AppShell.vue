@@ -14,10 +14,10 @@ import {
 } from '@lucide/vue'
 import BrandLogo from '../../components/brand/BrandLogo.vue'
 import TaskFormDrawer from '../../components/tasks/TaskFormDrawer.vue'
+import { LIMITS } from '../../constants/limits'
 import { useToasts } from '../../composables/useToasts'
 import { errorMessage } from '../../api/client'
 import { useAuthStore } from '../../stores/auth'
-
 import { useTasksStore, localDate } from '../../stores/tasks'
 const tasks = useTasksStore()
 const notificationsOpen = ref(false)
@@ -152,6 +152,7 @@ async function logout() {
             v-model="tasks.search"
             aria-label="Buscar em todo o TaskFlow"
             placeholder="Buscar tarefas ou tags"
+            :maxlength="LIMITS.SEARCH"
             @input="router.push('/app/tarefas')"
           >
         </div>

@@ -106,11 +106,14 @@ def test_authentication_required(client, headers):
         ({"exp": None}, "HS256"),
         ({"sub": None}, "HS256"),
         ({"iat": None}, "HS256"),
+        ({"tv": None}, "HS256"),
         ({"exp": 0}, "HS256"),
         ({"sub": "0"}, "HS256"),
         ({"sub": "-1"}, "HS256"),
         ({"sub": "abc"}, "HS256"),
         ({"sub": "9999999999999999999999"}, "HS256"),
+        ({"tv": -1}, "HS256"),
+        ({"tv": True}, "HS256"),
         ({}, "HS384"),
         ({"exp": "9999999999"}, "HS256"),
         ({"exp": []}, "HS256"),
@@ -119,7 +122,12 @@ def test_authentication_required(client, headers):
 )
 def test_invalid_jwt_claims(client, settings, changes, algorithm):
     now = datetime.now(UTC)
-    claims = {"sub": "1", "iat": now, "exp": now + timedelta(minutes=1)} | changes
+    claims = {
+        "sub": "1",
+        "tv": 0,
+        "iat": now,
+        "exp": now + timedelta(minutes=1),
+    } | changes
     claims = {key: value for key, value in claims.items() if value is not None}
     token = jwt.encode(
         claims, settings.jwt_secret.get_secret_value(), algorithm=algorithm
@@ -194,19 +202,24 @@ def test_profile_changes_and_password_require_current_secret(client):
         ).status_code
         == 204
     )
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
     assert (
         client.post(
             "/api/v1/auth/login", json=credentials("novo@example.com")
         ).status_code
         == 401
     )
-    assert (
-        client.post(
-            "/api/v1/auth/login", json=credentials("novo@example.com", "Nova-senha-123")
-        ).status_code
-        == 200
+    renewed = client.post(
+        "/api/v1/auth/login",
+        json=credentials("novo@example.com", "Nova-senha-123"),
     )
-    assert "password" not in client.get("/api/v1/auth/me", headers=headers).text
+    assert renewed.status_code == 200
+    me = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {renewed.json()['access_token']}"},
+    )
+    assert me.status_code == 200
+    assert "password" not in me.text
 
 
 def test_profile_duplicate_email_rolls_back(client):

@@ -27,6 +27,7 @@ class SqlUserRepository:
                 model.password_hash,
                 model.name,
                 model.created_at.replace(tzinfo=UTC) if model.created_at else None,
+                model.token_version,
             )
             if model
             else None
@@ -96,11 +97,12 @@ class JwtTokens:
         self.secret = settings.jwt_secret.get_secret_value()
         self.minutes = settings.access_token_expire_minutes
 
-    def issue(self, user_id: int) -> str:
+    def issue(self, user_id: int, token_version: int = 0) -> str:
         now = datetime.now(UTC)
         return jwt.encode(
             {
                 "sub": str(user_id),
+                "tv": token_version,
                 "iat": now,
                 "exp": now + timedelta(minutes=self.minutes),
             },
@@ -108,15 +110,16 @@ class JwtTokens:
             algorithm="HS256",
         )
 
-    def subject(self, token: str) -> int:
+    def parse(self, token: str) -> tuple[int, int]:
         try:
             claims = jwt.decode(
                 token,
                 self.secret,
                 algorithms=["HS256"],
-                options={"require": ["sub", "exp", "iat"]},
+                options={"require": ["sub", "exp", "iat", "tv"]},
             )
             subject = claims["sub"]
+            version = claims["tv"]
             if (
                 not isinstance(subject, str)
                 or not subject.isascii()
@@ -129,6 +132,10 @@ class JwtTokens:
                 float,
             ):
                 raise ValueError("invalid timestamp")
-            return int(subject)
+            if not isinstance(version, int) or isinstance(version, bool):
+                raise ValueError("invalid token version")
+            if not 0 <= version <= 2**31 - 1:
+                raise ValueError("invalid token version")
+            return int(subject), version
         except (jwt.InvalidTokenError, ValueError, TypeError, OverflowError) as error:
             raise AuthenticationError("Token inválido ou expirado") from error
