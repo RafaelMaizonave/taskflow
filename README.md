@@ -12,16 +12,28 @@ Aplicação web de gerenciamento de tarefas pessoais: cadastro, login com sessã
 
 ## Pré-requisitos
 
+**Com Docker (recomendado):**
+
 - [Docker](https://docs.docker.com/get-docker/) com Compose V2 (Desktop ou Engine)
 - Make é opcional — use os scripts em `scripts/` se preferir
 
 Não é necessário instalar Python, Node ou uv no host para o fluxo Docker.
+
+**Sem Docker:**
+
+- Python 3.12 e [uv](https://docs.astral.sh/uv/)
+- Node.js 24 e npm 11
 
 ## Como executar
 
 ```bash
 git clone https://github.com/RafaelMaizonave/taskflow.git
 cd taskflow
+```
+
+### Com Docker
+
+```bash
 make run
 ```
 
@@ -36,6 +48,31 @@ Alternativas sem Make:
 ```
 
 Na primeira execução o ambiente gera `.env` com `JWT_SECRET` seguro (sem exibir o valor), constrói as imagens, sobe os serviços e aguarda os health checks. Execuções seguintes reutilizam cache e **preservam** o banco no volume Docker.
+
+### Sem Docker
+
+Abra dois terminais na raiz do repositório.
+
+**1. Backend**
+
+```bash
+cd backend
+uv sync --locked
+test -e .env || (umask 077; printf 'JWT_SECRET=%s\nCORS_ORIGINS=["http://localhost:5173"]\n' "$(openssl rand -hex 32)" > .env)
+uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --reload
+```
+
+**2. Frontend**
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+O Vite encaminha `/api` para `http://127.0.0.1:8000`. O backend usa `backend/.env` (não o `.env` da raiz, que é do Compose). Variáveis opcionais: `backend/.env.example` e `frontend/.env.example`.
+
+Detalhes (portas, WSL, hot reload, testes locais): [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Acessar a aplicação
 
