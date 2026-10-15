@@ -49,7 +49,7 @@ A instalação de dependências Linux do navegador pode solicitar privilégios a
 
 | Contexto | Arquivo | Conteúdo típico |
 | --- | --- | --- |
-| Docker Compose | `.env` (raiz) | `JWT_SECRET` (obrigatório, ≥32 caracteres); `BACKEND_PORT` / `FRONTEND_PORT` opcionais |
+| Docker Compose | `.env` (raiz) | `JWT_SECRET` (obrigatório, ≥32 caracteres); `BACKEND_PORT` / `FRONTEND_PORT` e `BACKEND_BIND` / `FRONTEND_BIND` opcionais |
 | Execução manual do backend | `backend/.env` | Ver `backend/.env.example` |
 | Frontend | `frontend/.env` (opcional) | Ver `frontend/.env.example` |
 
@@ -59,7 +59,7 @@ Não execute `docker compose config` sem `--quiet` ao compartilhar logs: a saíd
 
 ## Portas e CORS
 
-As portas são publicadas apenas em `127.0.0.1`. Padrões: backend `8000`, frontend `5173`.
+As portas são publicadas em `127.0.0.1` por padrão. Padrões: backend `8000`, frontend `5173`. `BACKEND_BIND` e `FRONTEND_BIND` trocam a interface; na VPS use `FRONTEND_BIND=0.0.0.0`.
 
 Ao alterar `FRONTEND_PORT`, o Compose ajusta `CORS_ORIGINS` para `http://localhost:<porta>`. O proxy do Vite usa a mesma origem do frontend; CORS importa sobretudo para acesso direto à API.
 
@@ -76,9 +76,13 @@ Nunca use `docker compose down -v` em fluxos comuns.
 
 ## Hot reload
 
+O arquivo `docker-compose.yml` sobe o código que foi copiado para a imagem. O `docker-compose.override.yml` entra sozinho no `docker compose` local e devolve o reload:
+
 - Frontend: `frontend/src` montado no contêiner; alterações no código acionam o Vite.
 - Backend: `backend/app` montado com Uvicorn `--reload`.
 - Mudanças em dependências (`package.json`, `uv.lock`) ou Dockerfiles exigem `make build` ou `make run` novamente.
+
+Um deploy que usa só `docker-compose.yml` não aplica esse override. É o caso do Docker Manager da Hostinger, que não mantém o código-fonte ao lado do Compose.
 
 ## Serviços de ferramenta no Compose
 

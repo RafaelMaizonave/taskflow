@@ -1,0 +1,21 @@
+# Uso local automático do Compose. O Docker Manager da Hostinger lê só docker-compose.yml.
+services:
+  backend:
+    command:
+      [
+        "uv",
+        "run",
+        "uvicorn",
+        "app.main:create_app",
+        "--factory",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
+    volumes:
+      - ./backend/app:/app/app
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src:ro
