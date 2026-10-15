@@ -94,21 +94,3 @@ frontend/src/        # Vue 3 (api, components, router, stores, views)
 ```
 
 Clean Architecture no backend: domínio e casos de uso não importam FastAPI nem SQLAlchemy. O frontend usa Composition API, Router e Pinia; o Vite faz proxy de `/api` para o backend.
-
-## Documentação adicional
-
-| Documento | Conteúdo |
-| --- | --- |
-| [docs/BACKEND.md](docs/BACKEND.md) | Contratos REST e autenticação |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Execução sem Docker, portas, WSL, hot reload |
-| [docs/TESTING.md](docs/TESTING.md) | Suítes e CI |
-| [docs/PLAN.md](docs/PLAN.md) | Plano e issues |
-| [docs/REDESIGN.md](docs/REDESIGN.md) | Interface e migração de dados |
-
-## Decisões técnicas
-
-- Sessão via cookie HttpOnly (SameSite=Strict; Secure em HTTPS); a API também aceita Bearer.
-- SQLite em volume Docker nomeado; `stop`/`restart`/`clean` não apagam dados — só `reset` com confirmação.
-- Portas vinculadas a `127.0.0.1`; `JWT_SECRET` obrigatório (≥32 caracteres), gerado automaticamente no primeiro `run`.
-- SQLAlchemy síncrono; migração SQLite versionada preserva contas e tarefas ao evoluir o esquema.
-- Imagens voltadas a desenvolvimento e testes, não a produção. Limitações conhecidas (sem refresh token, rate limiting ou recuperação de senha) estão em [docs/BACKEND.md](docs/BACKEND.md).
