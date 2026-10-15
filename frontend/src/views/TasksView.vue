@@ -114,7 +114,12 @@ async function moveTask(task: Task, status: TaskStatus, position?: number) {
     } else {
       await tasks.move(task.id, status, position)
     }
-    show(status === 'done' ? 'Tarefa concluída.' : 'Tarefa movida.')
+    const messages: Record<TaskStatus, string> = {
+      backlog: 'Tarefa movida para o backlog.',
+      in_progress: 'Tarefa marcada como em andamento.',
+      done: 'Tarefa concluída.',
+    }
+    show(messages[status])
   } catch {
     show('Não foi possível mover a tarefa.', 'error')
   } finally {
