@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Columns3,
   Filter,
   LayoutList,
@@ -15,7 +18,10 @@ import SelectMenu from '../components/ui/SelectMenu.vue'
 import TaskCard from '../components/tasks/TaskCard.vue'
 import TaskFormDrawer from '../components/tasks/TaskFormDrawer.vue'
 import { LIMITS } from '../constants/limits'
-import { useTasksStore } from '../stores/tasks'
+import {
+  useTasksStore,
+  type TaskSortColumn,
+} from '../stores/tasks'
 import { useToasts } from '../composables/useToasts'
 import type { Task, TaskStatus, TaskPriority } from '../types'
 
@@ -31,6 +37,22 @@ const columns: { status: TaskStatus; label: string; tone: string }[] = [
   { status: 'in_progress', label: 'Em andamento', tone: 'blue' },
   { status: 'done', label: 'Concluídas', tone: 'green' },
 ]
+const sortColumns: { key: TaskSortColumn; label: string }[] = [
+  { key: 'title', label: 'Tarefa' },
+  { key: 'status', label: 'Status' },
+  { key: 'priority', label: 'Prioridade' },
+  { key: 'due_date', label: 'Prazo' },
+]
+function sortIcon(column: TaskSortColumn) {
+  if (tasks.sortBy !== column) return ArrowUpDown
+  return tasks.sortDir === 'asc' ? ArrowUp : ArrowDown
+}
+function sortLabel(column: TaskSortColumn, label: string) {
+  if (tasks.sortBy !== column) return `Ordenar por ${label}`
+  return tasks.sortDir === 'asc'
+    ? `${label}, crescente. Clique para decrescente`
+    : `${label}, decrescente. Clique para limpar ordenação`
+}
 const statusOptions = [
   { value: 'all', label: 'Todos os status' },
   { value: 'backlog', label: 'Backlog', tone: 'backlog' },
@@ -241,8 +263,27 @@ onMounted(() => tasks.load())
       v-else-if="tasks.view === 'table'"
       class="task-table"
     >
-      <div class="task-table__head">
-        <span>Tarefa</span><span>Status</span><span>Prioridade</span><span>Prazo</span><span>Ações</span>
+      <div
+        class="task-table__head"
+        role="row"
+      >
+        <button
+          v-for="column in sortColumns"
+          :key="column.key"
+          type="button"
+          class="task-table__sort"
+          :class="{ active: tasks.sortBy === column.key }"
+          :aria-label="sortLabel(column.key, column.label)"
+          @click="tasks.toggleSort(column.key)"
+        >
+          <span>{{ column.label }}</span>
+          <component
+            :is="sortIcon(column.key)"
+            :size="12"
+            aria-hidden="true"
+          />
+        </button>
+        <span>Ações</span>
       </div>
       <TaskCard
         v-for="task in tasks.filteredTasks"

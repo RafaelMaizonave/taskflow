@@ -1274,6 +1274,39 @@ select:focus-visible {
   text-transform: uppercase;
 }
 
+.task-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  justify-self: start;
+}
+
+.task-table__sort svg {
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity 150ms ease, color 150ms ease;
+}
+
+.task-table__sort:hover,
+.task-table__sort.active {
+  color: var(--ink);
+}
+
+.task-table__sort:hover svg,
+.task-table__sort.active svg {
+  opacity: 1;
+  color: var(--brand);
+}
+
 .task-card {
   position: relative;
   display: grid;

@@ -72,4 +72,74 @@ describe('Tarefas reais', () => {
   it('usa o dia local nos prazos', () => {
     expect(localDate(new Date(2026, 9, 15, 23, 59))).toBe('2026-10-15')
   })
+  it('ordena a lista por coluna e limpa no terceiro clique', async () => {
+    vi.mocked(tasksApi.list).mockResolvedValue([
+      {
+        ...task,
+        id: 1,
+        title: 'Zebra',
+        status: 'done',
+        priority: 'low',
+        due_date: null,
+        position: 0,
+      },
+      {
+        ...task,
+        id: 2,
+        title: 'Alpha',
+        status: 'backlog',
+        priority: 'high',
+        due_date: '2026-10-20',
+        position: 1,
+      },
+      {
+        ...task,
+        id: 3,
+        title: 'Beta',
+        status: 'in_progress',
+        priority: 'medium',
+        due_date: '2026-10-10',
+        position: 2,
+      },
+    ])
+    const store = useTasksStore()
+    await store.load()
+
+    store.toggleSort('title')
+    expect(store.filteredTasks.map((item) => item.title)).toEqual([
+      'Alpha',
+      'Beta',
+      'Zebra',
+    ])
+
+    store.toggleSort('title')
+    expect(store.filteredTasks.map((item) => item.title)).toEqual([
+      'Zebra',
+      'Beta',
+      'Alpha',
+    ])
+
+    store.toggleSort('priority')
+    expect(store.filteredTasks.map((item) => item.priority)).toEqual([
+      'low',
+      'medium',
+      'high',
+    ])
+
+    store.toggleSort('due_date')
+    expect(store.filteredTasks.map((item) => item.due_date)).toEqual([
+      '2026-10-10',
+      '2026-10-20',
+      null,
+    ])
+
+    store.toggleSort('due_date')
+    store.toggleSort('due_date')
+    expect(store.sortBy).toBeNull()
+    expect(store.filteredTasks.map((item) => item.id)).toEqual([1, 2, 3])
+
+    store.toggleSort('title')
+    store.setView('board')
+    expect(store.filteredTasks.map((item) => item.id)).toEqual([1, 2, 3])
+  })
 })
