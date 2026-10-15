@@ -195,15 +195,20 @@ test('cadastro, CRUD, filtros, quadro, avisos e persistência com API real', asy
   await expect(page.locator('.topbar')).toBeVisible()
   card = taskCard(page, 'Entrega revisada')
   await expect(card).toContainText('Concluída')
-  page.once('dialog', (dialog) => dialog.dismiss())
   await card
     .getByRole('button', { name: 'Excluir tarefa', exact: true })
     .click()
+  const deleteDialog = page.getByRole('dialog', { name: 'Excluir tarefa' })
+  await expect(deleteDialog).toBeVisible()
+  await deleteDialog.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(deleteDialog).toHaveCount(0)
   await expect(card).toBeVisible()
-  page.once('dialog', (dialog) => dialog.accept())
   await card
     .getByRole('button', { name: 'Excluir tarefa', exact: true })
     .click()
+  await expect(deleteDialog).toBeVisible()
+  await deleteDialog.getByRole('button', { name: 'Excluir' }).click()
+  await expect(deleteDialog).toHaveCount(0)
   await expect(
     page.getByRole('heading', { name: 'Seu fluxo começa aqui' }),
   ).toBeVisible()

@@ -22,11 +22,13 @@ import {
   useTasksStore,
   type TaskSortColumn,
 } from '../stores/tasks'
+import { useDialog } from '../composables/useDialog'
 import { useToasts } from '../composables/useToasts'
 import type { Task, TaskStatus, TaskPriority } from '../types'
 
 const tasks = useTasksStore()
 const { show } = useToasts()
+const { confirm } = useDialog()
 const drawerOpen = ref(false)
 const selectedTask = ref<Task | null>(null)
 const dragged = ref<Task | null>(null)
@@ -86,10 +88,14 @@ function editTask(task: Task) {
   drawerOpen.value = true
 }
 async function removeTask(task: Task) {
-  if (
-    !window.confirm(`Excluir “${task.title}”? Esta ação não pode ser desfeita.`)
-  )
-    return
+  const confirmed = await confirm({
+    title: 'Excluir tarefa',
+    message: `Excluir “${task.title}”? Esta ação não pode ser desfeita.`,
+    confirmLabel: 'Excluir',
+    cancelLabel: 'Cancelar',
+    variant: 'danger',
+  })
+  if (!confirmed) return
   try {
     await tasks.remove(task.id)
     show('Tarefa excluída.')
