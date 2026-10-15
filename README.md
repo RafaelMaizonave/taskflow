@@ -80,7 +80,7 @@ Abra **http://localhost:5173** no navegador do Windows. Você será direcionado 
 
 O token fica apenas em memória: atualizar a página exige novo login. Os dados das tarefas continuam no SQLite. Para testar o isolamento, crie uma tarefa, saia e entre com outra conta; ela não deve ver a tarefa anterior.
 
-A porta é publicada apenas no loopback do host. Se estiver ocupada, encerre o serviço que a utiliza ou ajuste o mapeamento de porta no Compose.
+As portas são publicadas apenas no loopback do host. `BACKEND_PORT` e `FRONTEND_PORT` permitem alterar as portas publicadas (padrões 8000 e 5173). Ao alterar a porta do frontend, ajuste também `CORS_ORIGINS` para acesso direto à API; o proxy usa a mesma origem do frontend. Se estiver ocupada, encerre o serviço que a utiliza ou ajuste o mapeamento de porta no Compose.
 
 ```bash
 # Acompanhar logs
@@ -120,9 +120,17 @@ docker compose run --build --rm e2e
 
 Os serviços de ferramentas são ativados explicitamente; não ficam executando com o frontend. A imagem E2E é separada e contém Node, Python, uv e Chromium para testar o frontend contra a API real. O teste E2E compila a aplicação, inicia Uvicorn na porta interna 18765 com SQLite temporário e abre preview na porta 4173. Não depende dos serviços de desenvolvimento; o banco temporário é removido ao encerrar.
 
-Vitest testa a sessão em memória e o formulário de tarefas. Playwright testa a aplicação compilada em Chromium com configurações desktop e mobile: cadastro, confirmação de senha, login inválido/válido, CRUD, filtros, cancelamento da exclusão, logout e perda da sessão ao recarregar. O cenário de 401 usa uma falha controlada na resposta de tarefas para verificar a limpeza da sessão; o fluxo principal usa a API real. A emulação mobile não substitui testes em aparelho físico.
+Vitest testa a sessão em memória e o formulário de tarefas. Playwright testa a aplicação compilada em Chromium com configurações desktop e mobile: cadastro, confirmação de senha, login inválido/válido, CRUD, filtros, cancelamento da exclusão, logout e perda da sessão ao recarregar. Um cenário adicional troca entre duas contas pela interface e confirma que a tarefa continua visível somente para sua proprietária. O cenário de 401 usa uma falha controlada na resposta de tarefas para verificar a limpeza da sessão; o fluxo principal usa a API real. A emulação mobile não substitui testes em aparelho físico.
 
 O backend usa Pytest e HTTPX com bancos temporários isolados. Os testes cobrem configuração, restrições e persistência SQLite, sessões, health check, CORS e um servidor Uvicorn real com reinicialização. Cadastro, duplicidade, login, tokens inválidos/expirados, CRUD, filtros e isolamento entre usuários também são cobertos.
+
+Para repetir a validação de infraestrutura, com Python 3.12 e Docker Compose disponíveis:
+
+```bash
+python3 scripts/validate_compose.py
+```
+
+O script cria um projeto Compose exclusivo, segredo temporário, portas livres e volume descartável. Verifica frontend, Swagger, proxy e persistência após recriar o backend; ao terminar, remove os contêineres e o volume desse projeto, inclusive se ocorrer falha. Não usa o banco da aplicação em desenvolvimento. Essa verificação complementa os testes de navegador; não os substitui.
 
 ## 5. Executar sem Docker
 
@@ -184,16 +192,17 @@ Vue usa Composition API, Router e Pinia. Tailwind cuida dos estilos. Ruff, ESLin
 
 ## Próximas entregas e limitações
 
-Veja [o plano e os critérios das issues](docs/PLAN.md). As próximas etapas incluem revisão da cobertura, revisão final de segurança e validação Docker completa.
+Veja [o plano e os critérios das issues](docs/PLAN.md). As issues #5, #8 e #9 possuem implementação e validações locais descritas abaixo; a confirmação do CI remoto depende da publicação autorizada das alterações.
 
 Tokens são mantidos apenas em memória: recarregar a página exigirá novo login. Logout local não revoga JWT já emitido. Para produção, avaliar cookies HttpOnly/Secure, proteção CSRF, revogação e rotação de tokens, rate limiting, recuperação de senha, migrações e observabilidade.
 
 ## Validação desta entrega
 
-- Compose validado com `docker compose config --quiet`.
-- Aplicação validada fora do Docker: backend com 106 testes unitários, integração e E2E de servidor real aprovados; frontend com build, 5 testes unitários e 6 E2E aprovados.
-- Build das imagens neste ambiente em nuvem bloqueado por resolução DNS/rede ao instalar dependências, inclusive ao testar a rede do host. A inicialização e os testes dentro dos contêineres permanecem sem validação; devem ser executados no WSL com os comandos acima.
-- Nenhuma instalação ou execução no WSL do usuário foi realizada remotamente.
+- Validação local em Docker: backend com 106 testes unitários, integração e E2E de servidor real aprovados; Ruff lint e formatação aprovados.
+- Frontend em Docker: lint, tipos, 5 testes unitários, build e 8 testes E2E em Chromium (desktop e mobile) aprovados, incluindo CRUD, logout e isolamento entre contas.
+- Compose validado com serviços saudáveis, Swagger, proxy e persistência de usuário e tarefa após recriação do backend.
+- O CI inclui as suítes backend/frontend e a validação do Compose. A execução remota destas alterações ainda não foi verificada.
+- `npm audit` identificou três alertas nas ferramentas de teste (Vitest, @vitest/mocker e tinypool: um moderado e dois críticos). A correção proposta pelo npm exige atualização principal do Vitest; essa migração permanece pendente. Não foram identificados alertas em dependências de produção nessa execução.
 
 ## Persistência e ciclo de vida do backend
 

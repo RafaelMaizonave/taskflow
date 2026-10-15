@@ -4,7 +4,7 @@ services:
     build:
       context: ./backend
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     environment:
       JWT_SECRET: ${JWT_SECRET:-}
       DATABASE_URL: sqlite:////app/data/taskflow.db
@@ -27,7 +27,7 @@ services:
       context: ./frontend
       target: development
     ports:
-      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
     volumes:
       - ./frontend/src:/app/src:ro
     healthcheck:

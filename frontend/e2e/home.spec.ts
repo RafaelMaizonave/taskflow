@@ -87,3 +87,36 @@ test('encerra a sessão quando uma requisição autenticada recebe 401', async (
   await expect(page).toHaveURL(/\/login\?expired=1$/)
   await expect(page.getByRole('status')).toContainText('Sua sessão expirou')
 })
+
+test('trocar de conta preserva o isolamento das tarefas', async ({ page }) => {
+  const password = 'Senha-segura-123'
+  const emails = [0, 1].map(() => `isolation-${crypto.randomUUID()}@example.com`)
+  for (const email of emails) {
+    await page.goto('/cadastro')
+    await page.getByLabel('E-mail', { exact: true }).fill(email)
+    await page.getByLabel('Senha', { exact: true }).fill(password)
+    await page.getByLabel('Confirmar senha').fill(password)
+    await page.getByRole('button', { name: 'Criar conta' }).click()
+    await expect(page.getByRole('status')).toContainText('Conta criada')
+  }
+  async function login(email: string) {
+    await page.getByLabel('E-mail', { exact: true }).fill(email)
+    await page.getByLabel('Senha', { exact: true }).fill(password)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await expect(page.getByRole('heading', { name: 'Minhas tarefas.' })).toBeVisible()
+  }
+  await login(emails[0]!)
+  await page.getByRole('button', { name: 'Nova tarefa', exact: false }).click()
+  await page.getByLabel('Título', { exact: true }).fill('Tarefa privada da primeira conta')
+  await page.getByRole('button', { name: 'Salvar tarefa' }).click()
+  await expect(page.getByRole('heading', { name: 'Tarefa privada da primeira conta' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sair', exact: true }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await login(emails[1]!)
+  await expect(page.getByRole('heading', { name: 'Nenhuma tarefa por aqui' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Tarefa privada da primeira conta' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Sair', exact: true }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await login(emails[0]!)
+  await expect(page.getByRole('heading', { name: 'Tarefa privada da primeira conta' })).toBeVisible()
+})
