@@ -26,3 +26,9 @@ dist/
 # Browser tests
 test-results/
 playwright-report/
+
+# Contexto local de revisão visual e agentes
+.impeccable/
+AGENTS.md
+PRODUCT.md
+DESIGN.md
