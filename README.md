@@ -2,6 +2,8 @@
 
 Aplicação web de gerenciamento de tarefas pessoais: cadastro, login com sessão em cookie HttpOnly, dashboard com resumo real, lista e Kanban, prioridades, tags, prazos, busca, filtros e perfil editável. Cada conta vê apenas as próprias tarefas.
 
+Demonstração: https://taskflows.duckdns.org
+
 ## Tecnologias
 
 | Camada | Stack |
@@ -78,6 +80,7 @@ Detalhes (portas, WSL, hot reload, testes locais): [docs/DEVELOPMENT.md](docs/DE
 
 | Recurso | URL |
 | --- | --- |
+| Demonstração | https://taskflows.duckdns.org |
 | Frontend | http://localhost:5173 |
 | Swagger / OpenAPI | http://localhost:8000/docs |
 | Health | http://localhost:8000/health |
