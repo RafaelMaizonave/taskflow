@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterLink, RouterView } from 'vue-router'
 import {
   Bell,
@@ -41,6 +41,11 @@ const mobileOpen = ref(false)
 const createOpen = ref(false)
 const profileOpen = ref(false)
 
+watch(mobileOpen, (open) => {
+  if (open) document.body.style.overflow = 'hidden'
+  else if (!createOpen.value) document.body.style.overflow = ''
+})
+
 const profileMenu = ref<HTMLElement | null>(null)
 const notificationsMenu = ref<HTMLElement | null>(null)
 function closePopovers(event: KeyboardEvent | MouseEvent) {
@@ -61,6 +66,7 @@ onMounted(() => {
   document.addEventListener('click', closePopovers)
 })
 onBeforeUnmount(() => {
+  document.body.style.overflow = ''
   document.removeEventListener('keydown', closePopovers)
   document.removeEventListener('click', closePopovers)
 })

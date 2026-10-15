@@ -169,79 +169,82 @@ async function submit() {
           class="task-form"
           @submit.prevent="submit"
         >
-          <fieldset
-            :disabled="state.saving"
-            class="task-form-fields"
-          >
-            <FormField
-              v-model="form.title"
-              label="Título"
-              :maxlength="LIMITS.TITLE"
-              placeholder="Ex.: Revisar planejamento da sprint"
-              required
-              :error="state.error"
-            />
-            <FormField
-              v-model="form.description"
-              label="Descrição"
-              :maxlength="LIMITS.DESCRIPTION"
-              placeholder="Adicione contexto, links ou observações..."
-              multiline
-            />
-            <div class="form-grid">
-              <label class="field">
-                <span class="field__label">Status</span>
-                <select
-                  v-model="form.status"
-                  class="field__control"
-                >
-                  <option value="backlog">Backlog</option>
-                  <option value="in_progress">Em andamento</option>
-                  <option value="done">Concluída</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Prioridade</span>
-                <select
-                  v-model="form.priority"
-                  class="field__control"
-                >
-                  <option value="low">Baixa</option>
-                  <option value="medium">Média</option>
-                  <option value="high">Alta</option>
-                </select>
-              </label>
-            </div>
-            <FormField
-              v-model="form.due_date"
-              label="Prazo"
-              type="date"
-            />
-            <FormField
-              v-model="state.tagsText"
-              label="Tags"
-              :maxlength="TAGS_TEXT_MAX"
-              placeholder="Produto, Design, Pesquisa"
-            />
-            <p class="form-hint">
-              Separe as tags por vírgulas. Use até {{ LIMITS.TAGS_MAX }} tags
-              ({{ LIMITS.TAG }} caracteres cada).
-            </p>
-            <footer class="task-drawer__footer">
-              <BaseButton
-                variant="secondary"
-                @click="emit('update:open', false)"
-              >
-                Cancelar
-              </BaseButton>
-              <BaseButton
-                type="submit"
-                :loading="state.saving"
-              >
-                {{ task ? 'Salvar alterações' : 'Criar tarefa' }}
-              </BaseButton>
-            </footer>
-          </fieldset>
+          <div class="task-form__body">
+            <fieldset
+              :disabled="state.saving"
+              class="task-form-fields"
+            >
+              <FormField
+                v-model="form.title"
+                label="Título"
+                :maxlength="LIMITS.TITLE"
+                placeholder="Ex.: Revisar planejamento da sprint"
+                required
+                :error="state.error"
+              />
+              <FormField
+                v-model="form.description"
+                label="Descrição"
+                :maxlength="LIMITS.DESCRIPTION"
+                placeholder="Adicione contexto, links ou observações..."
+                multiline
+              />
+              <div class="form-grid">
+                <label class="field">
+                  <span class="field__label">Status</span>
+                  <select
+                    v-model="form.status"
+                    class="field__control"
+                  >
+                    <option value="backlog">Backlog</option>
+                    <option value="in_progress">Em andamento</option>
+                    <option value="done">Concluída</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field__label">Prioridade</span>
+                  <select
+                    v-model="form.priority"
+                    class="field__control"
+                  >
+                    <option value="low">Baixa</option>
+                    <option value="medium">Média</option>
+                    <option value="high">Alta</option>
+                  </select>
+                </label>
+              </div>
+              <FormField
+                v-model="form.due_date"
+                label="Prazo"
+                type="date"
+              />
+              <FormField
+                v-model="state.tagsText"
+                label="Tags"
+                :maxlength="TAGS_TEXT_MAX"
+                placeholder="Produto, Design, Pesquisa"
+              />
+              <p class="form-hint">
+                Separe as tags por vírgulas. Use até {{ LIMITS.TAGS_MAX }} tags
+                ({{ LIMITS.TAG }} caracteres cada).
+              </p>
+            </fieldset>
+          </div>
+          <footer class="task-drawer__footer">
+            <BaseButton
+              variant="secondary"
+              :disabled="state.saving"
+              @click="emit('update:open', false)"
+            >
+              Cancelar
+            </BaseButton>
+            <BaseButton
+              type="submit"
+              :loading="state.saving"
+            >
+              {{ task ? 'Salvar alterações' : 'Criar tarefa' }}
+            </BaseButton>
+          </footer>
         </form>
       </section>
     </div>
