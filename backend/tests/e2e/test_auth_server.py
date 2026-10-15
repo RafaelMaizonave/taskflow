@@ -76,10 +76,21 @@ def test_auth_flow_survives_server_restart(tmp_path):
                     headers = {
                         "Authorization": f"Bearer {login.json()['access_token']}"
                     }
-                    assert client.get("/api/v1/auth/me", headers=headers).json() == {
-                        "id": 1,
-                        "email": "e2e@example.com",
-                    }
+                    assert (
+                        client.get("/api/v1/auth/me", headers=headers).json().items()
+                        >= {
+                            "id": 1,
+                            "email": "e2e@example.com",
+                        }.items()
+                    )
+                    assert client.get("/api/v1/auth/me").status_code == 200
+                    assert (
+                        client.post(
+                            "/api/v1/auth/logout",
+                            headers={"X-Requested-With": "XMLHttpRequest"},
+                        ).status_code
+                        == 204
+                    )
                     assert client.get("/api/v1/auth/me").status_code == 401
                 assert (tmp_path / "e2e.db").exists()
             finally:

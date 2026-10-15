@@ -1,4 +1,7 @@
-from app.application.task_contracts import TaskRepository
+from datetime import UTC, datetime
+from typing import Unpack
+
+from app.application.task_contracts import TaskDetails, TaskRepository
 from app.domain.errors import NotFoundError
 from app.domain.task import Task
 from app.domain.task_status import TaskStatus
@@ -20,10 +23,18 @@ class TaskService:
         return self.repository.list(user_id, status, q)
 
     def create(
-        self, user_id: int, titulo: str, descricao: str, status: TaskStatus
+        self,
+        user_id: int,
+        titulo: str,
+        descricao: str,
+        status: TaskStatus,
+        **details: Unpack[TaskDetails],
     ) -> Task:
+        details["completed_at"] = (
+            datetime.now(UTC) if status == TaskStatus.DONE else None
+        )
         try:
-            task = self.repository.create(user_id, titulo, descricao, status)
+            task = self.repository.create(user_id, titulo, descricao, status, **details)
             self.repository.commit()
         except Exception:
             self.repository.rollback()
@@ -31,7 +42,13 @@ class TaskService:
         return task
 
     def update(self, task_id: int, user_id: int, changes: dict) -> Task:
-        self.get(task_id, user_id)
+        current = self.get(task_id, user_id)
+        if "status" in changes and changes["status"] != current.status:
+            changes = changes | {
+                "completed_at": (
+                    datetime.now(UTC) if changes["status"] == TaskStatus.DONE else None
+                )
+            }
         try:
             task = self.repository.update(task_id, user_id, changes)
             self.repository.commit()

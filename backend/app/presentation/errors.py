@@ -7,11 +7,17 @@ from app.domain.errors import (
     ConflictError,
     DomainError,
     NotFoundError,
+    PasswordMismatchError,
 )
 
 
 def domain_error_handler(_request: Request, error: DomainError) -> JSONResponse:
-    statuses = ((NotFoundError, 404), (ConflictError, 409), (AuthenticationError, 401))
+    statuses = (
+        (NotFoundError, 404),
+        (ConflictError, 409),
+        (AuthenticationError, 401),
+        (PasswordMismatchError, 403),
+    )
     for error_type, code in statuses:
         if isinstance(error, error_type):
             status = code

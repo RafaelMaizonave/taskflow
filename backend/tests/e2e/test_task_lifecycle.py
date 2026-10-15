@@ -85,16 +85,14 @@ def test_real_server_authenticated_task_lifecycle(tmp_path):
                     == 404
                 )
                 assert client.delete(path, headers=other).status_code == 404
-                updated = client.patch(
-                    path, headers=owner, json={"status": "completed"}
-                )
+                updated = client.patch(path, headers=owner, json={"status": "done"})
                 assert updated.status_code == 200
-                assert updated.json()["status"] == "completed"
+                assert updated.json()["status"] == "done"
                 assert updated.json()["descricao"] == "E2E"
                 listed = client.get(
                     "/api/v1/tasks",
                     headers=owner,
-                    params={"q": "VALIDAR", "status": "completed"},
+                    params={"q": "VALIDAR", "status": "done"},
                 )
                 assert len(listed.json()) == 1
                 assert client.delete(path, headers=owner).status_code == 204

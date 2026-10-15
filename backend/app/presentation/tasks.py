@@ -25,7 +25,10 @@ Service = Annotated[TaskService, Depends(get_task_service)]
 
 @router.post("", response_model=TaskResponse, status_code=201)
 def create_task(payload: CreateTask, user: CurrentUser, service: Service):
-    return service.create(user.id, payload.titulo, payload.descricao, payload.status)
+    details = payload.model_dump()
+    if details["position"] is None:
+        details.pop("position")
+    return service.create(user.id, **details)
 
 
 @router.get("", response_model=list[TaskResponse])

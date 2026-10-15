@@ -24,7 +24,10 @@ def test_register_login_and_current_user(client):
     data = credentials("  Rafael@EXAMPLE.com  ")
     response = client.post("/api/v1/auth/register", json=data)
     assert response.status_code == 201
-    assert response.json() == {"id": 1, "email": "rafael@example.com"}
+    assert response.json()["id"] == 1
+    assert response.json()["email"] == "rafael@example.com"
+    assert response.json()["name"] == ""
+    assert response.json()["created_at"] is not None
     with client.app.state.database.session() as session:
         user = session.scalar(select(UserModel))
         assert user.password_hash != data["password"]
@@ -35,7 +38,10 @@ def test_register_login_and_current_user(client):
     response = client.get(
         "/api/v1/auth/me", headers={"Authorization": f"Bearer {token['access_token']}"}
     )
-    assert response.json() == {"id": 1, "email": "rafael@example.com"}
+    assert response.json()["id"] == 1
+    assert response.json()["email"] == "rafael@example.com"
+    assert response.json()["name"] == ""
+    assert response.json()["created_at"] is not None
     assert "password" not in response.text
 
 
@@ -156,3 +162,65 @@ def test_unsigned_or_wrong_signature_tokens_are_rejected(client, algorithm, secr
     )
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_profile_changes_and_password_require_current_secret(client):
+    data = credentials()
+    user = client.post("/api/v1/auth/register", json=data | {"name": " Rafael "}).json()
+    assert user["name"] == "Rafael"
+    token = client.post("/api/v1/auth/login", json=data).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    updated = client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"name": "Rafa", "email": " NOVO@example.com "},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["email"] == "novo@example.com"
+    assert updated.json()["created_at"] == user["created_at"]
+    payload = {"current_password": "incorreta", "password": "Nova-senha-123"}
+    assert (
+        client.post(
+            "/api/v1/auth/change-password", headers=headers, json=payload
+        ).status_code
+        == 403
+    )
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+    assert (
+        client.post(
+            "/api/v1/auth/change-password",
+            headers=headers,
+            json=payload | {"current_password": data["password"]},
+        ).status_code
+        == 204
+    )
+    assert (
+        client.post(
+            "/api/v1/auth/login", json=credentials("novo@example.com")
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            "/api/v1/auth/login", json=credentials("novo@example.com", "Nova-senha-123")
+        ).status_code
+        == 200
+    )
+    assert "password" not in client.get("/api/v1/auth/me", headers=headers).text
+
+
+def test_profile_duplicate_email_rolls_back(client):
+    client.post("/api/v1/auth/register", json=credentials())
+    client.post("/api/v1/auth/register", json=credentials("other@example.com"))
+    token = client.post("/api/v1/auth/login", json=credentials()).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    assert (
+        client.patch(
+            "/api/v1/auth/me", headers=headers, json={"email": "other@example.com"}
+        ).status_code
+        == 409
+    )
+    assert (
+        client.get("/api/v1/auth/me", headers=headers).json()["email"]
+        == "rafael@example.com"
+    )

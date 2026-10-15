@@ -30,7 +30,7 @@ def test_relationship_defaults_and_cascade(database):
         task = TaskModel(titulo="Primeira tarefa", user=user)
         session.add(user)
         session.commit()
-        assert task.status == "pending"
+        assert task.status == "backlog"
         assert task.descricao == ""
         assert task.data_criacao is not None
         user_id = user.id
@@ -56,9 +56,9 @@ def test_email_is_unique(database):
 @pytest.mark.parametrize(
     "values",
     [
-        {"titulo": "", "status": "pending"},
-        {"titulo": "  ", "status": "pending"},
-        {"titulo": "x" * 201, "status": "pending"},
+        {"titulo": "", "status": "backlog"},
+        {"titulo": "  ", "status": "backlog"},
+        {"titulo": "x" * 201, "status": "backlog"},
         {"titulo": "Task", "status": "invalid"},
     ],
 )
@@ -106,7 +106,7 @@ def test_data_survives_engine_restart(settings):
         second.close()
 
 
-@pytest.mark.parametrize("status", ["pending", "in_progress", "completed"])
+@pytest.mark.parametrize("status", ["backlog", "in_progress", "done"])
 def test_accepts_supported_status(database, status):
     with database.session() as session:
         user = UserModel(email="status@example.com", password_hash="hash")

@@ -12,7 +12,9 @@ def test_register_normalizes_email_and_commits():
     users, passwords, tokens = Mock(), Mock(), Mock()
     service = AuthService(users, passwords, tokens)
     service.register(" Rafael@Example.com ", "password")
-    users.add.assert_called_once_with("rafael@example.com", passwords.hash.return_value)
+    users.add.assert_called_once_with(
+        "rafael@example.com", passwords.hash.return_value, ""
+    )
     users.commit.assert_called_once()
 
 

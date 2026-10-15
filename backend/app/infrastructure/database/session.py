@@ -5,7 +5,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.infrastructure.database.models import Base
+from app.infrastructure.database.migrations import migrate
 
 
 class Database:
@@ -31,7 +31,7 @@ class Database:
     def initialize(self) -> None:
         if self.path is not None:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-        Base.metadata.create_all(self.engine)
+        migrate(self.engine)
 
     def close(self) -> None:
         self.engine.dispose()

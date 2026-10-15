@@ -30,9 +30,31 @@ def test_failed_write_rolls_back_and_propagates(operation):
     service = TaskService(repository)
     with pytest.raises(RuntimeError, match="Banco indisponível"):
         if operation == "create":
-            service.create(7, "Título", "", TaskStatus.PENDING)
+            service.create(7, "Título", "", TaskStatus.BACKLOG)
         elif operation == "update":
             service.update(42, 7, {"titulo": "Novo"})
         else:
             service.delete(42, 7)
     repository.rollback.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "before,after,has_completion",
+    [
+        (TaskStatus.BACKLOG, TaskStatus.DONE, True),
+        (TaskStatus.DONE, TaskStatus.IN_PROGRESS, False),
+    ],
+)
+def test_completion_timestamp_tracks_status_transition(before, after, has_completion):
+    repository = Mock()
+    repository.get.return_value.status = before
+    TaskService(repository).update(42, 7, {"status": after})
+    changes = repository.update.call_args.args[2]
+    assert (changes["completed_at"] is not None) is has_completion
+
+
+def test_editing_completed_task_preserves_completion_timestamp():
+    repository = Mock()
+    repository.get.return_value.status = TaskStatus.DONE
+    TaskService(repository).update(42, 7, {"status": TaskStatus.DONE, "titulo": "Novo"})
+    assert "completed_at" not in repository.update.call_args.args[2]
