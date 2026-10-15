@@ -1,6 +1,6 @@
 # TaskFlow
 
-Aplicação de gerenciamento de tarefas com FastAPI e Vue 3, em desenvolvimento incremental. A aplicação possui cadastro, login, logout e gerenciamento de tarefas pela interface Vue, integrados ao backend FastAPI com SQLite. Clean Architecture separa domínio, casos de uso, infraestrutura e HTTP.
+Aplicação de gerenciamento de tarefas com FastAPI e Vue 3, em desenvolvimento incremental. A aplicação possui cadastro, login, logout e gerenciamento de tarefas pela interface Vue, integrados ao backend FastAPI com SQLite. Clean Architecture separa domínio, casos de uso, infraestrutura e HTTP. A interface segue o layout fornecido do Figma; [recursos, responsabilidades e migração](docs/REDESIGN.md) descrevem esta evolução.
 
 ## 1. Preparar o Windows e o WSL
 
@@ -76,9 +76,9 @@ curl --fail http://localhost:5173/
 curl --fail http://localhost:8000/health
 ```
 
-Abra **http://localhost:5173** no navegador do Windows. Você será direcionado ao login. Clique em **Criar conta**, cadastre um e-mail e uma senha de 8 a 128 caracteres e, depois, faça login. O dashboard permite criar, editar, excluir e alterar o status das tarefas. Pesquisa e filtro são aplicados ao clicar em **Aplicar filtros**. Não há usuário ou senha padrão.
+Abra **http://localhost:5173** no navegador do Windows. Você será direcionado ao login. Clique em **Criar conta**, cadastre nome, e-mail e uma senha de 8 a 128 caracteres e, depois, faça login. O dashboard exibe estatísticas reais e próximos prazos. **Minhas tarefas** oferece lista e Kanban, criação, edição, exclusão, prioridades, tags, prazos, busca e filtros imediatos. O perfil permite editar nome/e-mail e trocar a senha mediante confirmação da senha atual. Não há usuário ou senha padrão.
 
-O token fica apenas em memória: atualizar a página exige novo login. Os dados das tarefas continuam no SQLite. Para testar o isolamento, crie uma tarefa, saia e entre com outra conta; ela não deve ver a tarefa anterior.
+A sessão usa cookie HttpOnly: atualizar a página preserva o login enquanto a sessão estiver válida (30 minutos por padrão). A aplicação valida a sessão antes de liberar as rotas; acessar `/login` já autenticado redireciona ao dashboard. Sair remove o cookie. Os dados das tarefas continuam no SQLite. Para testar o isolamento, crie uma tarefa, saia e entre com outra conta; ela não deve ver a tarefa anterior.
 
 As portas são publicadas apenas no loopback do host. `BACKEND_PORT` e `FRONTEND_PORT` permitem alterar as portas publicadas (padrões 8000 e 5173). Ao alterar a porta do frontend, ajuste também `CORS_ORIGINS` para acesso direto à API; o proxy usa a mesma origem do frontend. Se estiver ocupada, encerre o serviço que a utiliza ou ajuste o mapeamento de porta no Compose.
 
@@ -120,7 +120,7 @@ docker compose run --build --rm e2e
 
 Os serviços de ferramentas são ativados explicitamente; não ficam executando com o frontend. A imagem E2E é separada e contém Node, Python, uv e Chromium para testar o frontend contra a API real. O teste E2E compila a aplicação, inicia Uvicorn na porta interna 18765 com SQLite temporário e abre preview na porta 4173. Não depende dos serviços de desenvolvimento; o banco temporário é removido ao encerrar.
 
-Vitest testa a sessão em memória e o formulário de tarefas. Playwright testa a aplicação compilada em Chromium com configurações desktop e mobile: cadastro, confirmação de senha, login inválido/válido, CRUD, filtros, cancelamento da exclusão, logout e perda da sessão ao recarregar. Um cenário adicional troca entre duas contas pela interface e confirma que a tarefa continua visível somente para sua proprietária. O cenário de 401 usa uma falha controlada na resposta de tarefas para verificar a limpeza da sessão; o fluxo principal usa a API real. A emulação mobile não substitui testes em aparelho físico.
+Vitest testa a restauração e limpeza da sessão, regras de estado/filtros/resumo e foco, teclado e validação do formulário de tarefas. Playwright testa a aplicação compilada em Chromium desktop e mobile: cadastro, confirmação de senha, login inválido/válido, CRUD, filtros, Kanban, avisos de prazo, perfil, troca de senha, cancelamento da exclusão, logout, persistência da sessão ao recarregar e expiração. Um cenário adicional troca entre duas contas pela interface e confirma que a tarefa continua visível somente para sua proprietária. O cenário de 401 usa uma falha controlada na resposta de tarefas para verificar a limpeza da sessão; o fluxo principal usa a API real. A emulação mobile não substitui testes em aparelho físico.
 
 O backend usa Pytest e HTTPX com bancos temporários isolados. Os testes cobrem configuração, restrições e persistência SQLite, sessões, health check, CORS e um servidor Uvicorn real com reinicialização. Cadastro, duplicidade, login, tokens inválidos/expirados, CRUD, filtros e isolamento entre usuários também são cobertos.
 
@@ -194,23 +194,25 @@ Vue usa Composition API, Router e Pinia. Tailwind cuida dos estilos. Ruff, ESLin
 
 Veja [o plano e os critérios das issues](docs/PLAN.md). As issues #5, #8 e #9 possuem implementação e validações locais descritas abaixo; a confirmação do CI remoto depende da publicação autorizada das alterações.
 
-Tokens são mantidos apenas em memória: recarregar a página exigirá novo login. Logout local não revoga JWT já emitido. Para produção, avaliar cookies HttpOnly/Secure, proteção CSRF, revogação e rotação de tokens, rate limiting, recuperação de senha, migrações e observabilidade.
+O navegador mantém a sessão em cookie HttpOnly, SameSite=Strict, com Secure em HTTPS. A API continua aceitando Bearer para clientes explícitos. Logout remove o cookie; não há refresh token ou revogação de JWT já copiado. Requisições que alteram dados usando cookie exigem `X-Requested-With: XMLHttpRequest`, e CORS aceita credenciais somente nas origens configuradas. Para produção, avaliar revogação/rotação, rate limiting, recuperação de senha e observabilidade.
 
 ## Validação desta entrega
 
-- Validação local em Docker: backend com 106 testes unitários, integração e E2E de servidor real aprovados; Ruff lint e formatação aprovados.
-- Frontend em Docker: lint, tipos, 5 testes unitários, build e 8 testes E2E em Chromium (desktop e mobile) aprovados, incluindo CRUD, logout e isolamento entre contas.
-- Compose validado com serviços saudáveis, Swagger, proxy e persistência de usuário e tarefa após recriação do backend.
-- O CI inclui as suítes backend/frontend e a validação do Compose. A execução remota destas alterações ainda não foi verificada.
-- `npm audit` identificou três alertas nas ferramentas de teste (Vitest, @vitest/mocker e tinypool: um moderado e dois críticos). A correção proposta pelo npm exige atualização principal do Vitest; essa migração permanece pendente. Não foram identificados alertas em dependências de produção nessa execução.
+- Backend em Docker: 124 testes unitários, de integração e E2E de servidor real aprovados; Ruff lint e formatação aprovados.
+- Frontend em Docker com Node 24: lint sem avisos, tipos, 11 testes unitários, build e 16 E2E em Chromium desktop/mobile aprovados.
+- Os E2E cobrem cadastro/login, CRUD com metadados, filtros, lista/quadros, movimentação e persistência da ordem, avisos de prazo, perfil, senha atual incorreta/correta, 401, recarregamento e isolamento entre contas.
+- A migração foi testada com banco legado, repetição e rollback em falha, preservando contas e tarefas.
+- Inspeção visual desktop/mobile comparada ao material fornecido; contraste secundário corrigido. A revisão de acabamento confirmou a correção.
+- A execução remota do CI destas alterações não foi verificada. Não houve commit ou publicação nesta entrega.
+- O ambiente ainda reporta três alertas nas ferramentas de teste (um moderado e dois críticos), previamente existentes; a atualização principal do Vitest permanece fora desta entrega.
 
 ## Persistência e ciclo de vida do backend
 
 Na inicialização, a aplicação valida configurações, cria o diretório do banco e as tabelas ausentes. Na finalização, libera o engine. Cada requisição que depende do banco recebe uma sessão própria, fechada ao terminar; commits e rollbacks são coordenados pelos serviços de aplicação. Sessões não executam commit automaticamente.
 
-`users` possui e-mail único e hash de senha. `tasks` possui título obrigatório de até 200 caracteres, descrição, status restrito, data de criação gerada em UTC e chave estrangeira para usuário. A integridade referencial é habilitada em toda conexão SQLite; exclusão de usuário remove suas tarefas. Datas são gravadas como UTC; SQLite não preserva informação de fuso no tipo datetime, e as respostas HTTP explicitam UTC na serialização.
+`users` possui nome, e-mail único, hash de senha e data de cadastro quando conhecida. `tasks` possui título obrigatório de até 200 caracteres, descrição, status restrito, prioridade, prazo opcional, tags, posição, timestamps e chave estrangeira para usuário. A integridade referencial é habilitada em toda conexão SQLite; exclusão de usuário remove suas tarefas. Datas são gravadas como UTC; SQLite não preserva informação de fuso no tipo datetime, e as respostas HTTP explicitam UTC na serialização.
 
-`create_all` permite reinicializações sem apagar dados, mas não migra tabelas existentes. Evolução de esquema exigirá migrações. Os endpoints de autenticação e tarefas são documentados abaixo. Não há migrações automáticas de esquema.
+A inicialização executa uma migração SQLite versionada e transacional para preservar os dados existentes ao adicionar perfil e metadados das tarefas. Os status antigos são convertidos para `backlog`, `in_progress` e `done`. Consulte [a migração e os recursos da interface](docs/REDESIGN.md) antes de atualizar um banco existente.
 
 ## Contratos do backend
 
