@@ -45,6 +45,13 @@ function Require-Docker {
     if ($LASTEXITCODE -ne 0) {
         Fail "Docker Compose V2 não encontrado. Atualize o Docker Desktop."
     }
+    docker network inspect web-edge 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        docker network create web-edge | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Fail "Não foi possível criar a rede Docker web-edge."
+        }
+    }
 }
 
 function Get-EnvValue([string]$Key, [string]$Default = "") {

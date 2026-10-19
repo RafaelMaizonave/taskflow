@@ -26,8 +26,11 @@ services:
     build:
       context: ./frontend
       target: development
-    ports:
-      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-5173}:5173"
+    networks:
+      default:
+      web-edge:
+        aliases:
+          - taskflow-frontend
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
@@ -49,3 +52,8 @@ services:
 
 volumes:
   taskflow-data:
+
+networks:
+  web-edge:
+    external: true
+    name: web-edge
