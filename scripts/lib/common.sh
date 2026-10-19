@@ -46,6 +46,9 @@ require_docker() {
   if ! docker compose version >/dev/null 2>&1; then
     fail "Docker Compose V2 não encontrado. Atualize o Docker para uma versão com o plugin 'docker compose'."
   fi
+  if ! docker network inspect web-edge >/dev/null 2>&1; then
+    docker network create web-edge >/dev/null
+  fi
 }
 
 read_env_value() {

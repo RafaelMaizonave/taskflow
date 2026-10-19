@@ -10,7 +10,18 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def ensure_web_edge() -> None:
+    inspect = subprocess.run(
+        ["docker", "network", "inspect", "web-edge"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if inspect.returncode != 0:
+        subprocess.run(["docker", "network", "create", "web-edge"], check=True)
+
+
 def main() -> None:
+    ensure_web_edge()
     environment = os.environ | {
         "JWT_SECRET": secrets.token_urlsafe(48),
         "BACKEND_PORT": "0",

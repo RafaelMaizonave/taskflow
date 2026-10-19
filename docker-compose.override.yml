@@ -17,5 +17,7 @@ services:
     volumes:
       - ./backend/app:/app/app
   frontend:
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
     volumes:
       - ./frontend/src:/app/src:ro
