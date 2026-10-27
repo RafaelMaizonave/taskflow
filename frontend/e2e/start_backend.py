@@ -21,6 +21,9 @@ with tempfile.TemporaryDirectory(prefix="taskflow-browser-") as directory:
         JWT_SECRET=secrets.token_urlsafe(48),
         DATABASE_URL=f"sqlite:///{directory}/browser.db",
         CORS_ORIGINS="[]",
+        # Desktop e mobile rodam em paralelo no mesmo IP. O limite de
+        # produção (20/min por rota) responde 429 e impede o login.
+        AUTH_RATE_LIMIT="10000",
     )
     process = subprocess.Popen(
         [
