@@ -59,3 +59,51 @@ def test_expired_cookie_and_https_flags(settings):
         client.cookies.clear()
         client.cookies.set("taskflow_session", expired, path="/api/v1")
         assert client.get("/api/v1/auth/me").status_code == 401
+
+
+def session_token(set_cookie: str) -> str:
+    value = set_cookie.split(";", 1)[0]
+    marker = "taskflow_session="
+    assert value.startswith(marker)
+    return value.removeprefix(marker)
+
+
+def test_password_change_refreshes_current_cookie(settings):
+    with TestClient(create_app(settings)) as client:
+        data = {"email": "renew@example.com", "password": "Senha-segura-123"}
+        client.post("/api/v1/auth/register", json=data)
+        login = client.post("/api/v1/auth/login", json=data)
+        previous = login.json()["access_token"]
+        changed = client.post(
+            "/api/v1/auth/change-password",
+            headers=BROWSER,
+            json={
+                "current_password": data["password"],
+                "password": "Nova-senha-12345",
+            },
+        )
+        assert changed.status_code == 204
+        cookie = changed.headers["set-cookie"]
+        assert "HttpOnly" in cookie
+        assert "Path=/api/v1" in cookie
+        renewed = session_token(cookie)
+        assert renewed != previous
+        secret = settings.jwt_secret.get_secret_value()
+        previous_claims = jwt.decode(previous, secret, algorithms=["HS256"])
+        renewed_claims = jwt.decode(renewed, secret, algorithms=["HS256"])
+        assert renewed_claims["sub"] == previous_claims["sub"]
+        assert renewed_claims["tv"] == previous_claims["tv"] + 1
+        assert client.get("/api/v1/auth/me").status_code == 200
+        created = client.post(
+            "/api/v1/tasks",
+            json={"titulo": "Depois da senha"},
+            headers=BROWSER,
+        )
+        assert created.status_code == 201
+        assert (
+            client.get(
+                "/api/v1/auth/me",
+                headers={"Authorization": f"Bearer {previous}"},
+            ).status_code
+            == 401
+        )

@@ -165,8 +165,7 @@ def change_password(
     response: Response,
     user: Annotated[User, Depends(get_current_user)],
     service: Annotated[AuthService, Depends(get_auth_service)],
-) -> Response:
+) -> None:
     token = service.change_password(user, data.current_password, data.password)
     duration = request.app.state.settings.access_token_expire_minutes * 60
     set_session(response, request, token, duration)
-    return Response(status_code=204)
